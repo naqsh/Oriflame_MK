@@ -48,7 +48,19 @@ Leave referral values empty locally unless you have real, approved values. Never
 3. Set it as `POSTGRES_URL` in `.env`, replacing `[YOUR-PASSWORD]` **including the brackets** with the database password (URL-encode special characters).
 4. Do not create tables in the Supabase Table Editor — Alembic creates the schema in step 3.
 
-For tests, point `TEST_POSTGRES_URL` at a local PostgreSQL (e.g. `supabase start` or a `postgres` Docker container), never at the Supabase project. Details: `docs/DATABASE.md`.
+For tests, point `TEST_POSTGRES_URL` at a local PostgreSQL (e.g. `supabase start` or a `postgres` Docker container), never at the Supabase project. The migration tests downgrade to `base` and drop the schema. Details: `docs/DATABASE.md`.
+
+### Migration commands
+
+```bash
+uv run alembic upgrade head            # apply all migrations
+uv run alembic downgrade base          # roll back everything (development only)
+uv run alembic upgrade head --sql      # print the SQL without connecting
+uv run alembic check                   # fail if models and migrations differ
+uv run alembic revision --autogenerate -m "add products table"   # new migration
+```
+
+The URL comes from `POSTGRES_URL` via the typed settings, never from `alembic.ini`. On failure, Alembic exits non-zero with a message that never shows the URL. Examples: a malformed URL, a password still in `[ ]`, port 6543, or an unreachable host (the message suggests the Session pooler for the IPv6-only direct host).
 
 ---
 

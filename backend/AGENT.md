@@ -53,8 +53,8 @@ backend/
 │   │   ├── logging.py          # structlog JSON + RequestContextMiddleware (X-Request-ID, request_completed)
 │   │   └── security.py         # Admin auth, headers, rate limits (not created yet: OR-E6)
 │   ├── db/
-│   │   └── session.py          # SQLAlchemy engine (OR-003); session + get_db (OR-004)
-│   ├── models/                 # SQLAlchemy models
+│   │   └── session.py          # Engine, session factory, get_db, URL-free connection errors
+│   ├── models/                 # SQLAlchemy models (base.py: DeclarativeBase + naming convention)
 │   ├── schemas/                # Pydantic request/response models
 │   ├── repositories/           # DB access (no business logic)
 │   ├── services/
@@ -66,7 +66,7 @@ backend/
 │   │       ├── client.py       # Permitted-source client (timeouts, retries)
 │   │       └── catalogue.py    # Sync: idempotent upserts + sync-run records
 │   └── main.py                 # create_app() factory, CORS, 500 handler
-├── alembic/                    # Migrations
+├── alembic/                    # Migrations: env.py (URL from Settings, skips Supabase schemas), versions/001_baseline.py
 └── tests/
     ├── conftest.py
     ├── unit/

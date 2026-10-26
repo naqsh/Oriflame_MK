@@ -33,7 +33,7 @@ Use compatible stable releases and **record the pinned versions here** when MVP 
 | FastAPI | 0.162.0 (Starlette 1.10.0, uvicorn 0.54.0) | App factory: `backend.app.main:create_app` |
 | Pydantic / pydantic-settings | pydantic 2.14.1 / pydantic-settings 2.16.1 | mypy runs the `pydantic.mypy` plugin |
 | SQLAlchemy | 2.1.6 | Typed declarative models |
-| Alembic | _pin at scaffold_ | |
+| Alembic | 1.20.1 | `alembic.ini` at repo root; scripts in `backend/alembic/`; ruff-formats new revisions |
 | psycopg[binary] | 3.3.6 | `POSTGRES_URL` normalised to `postgresql+psycopg://`; `sslmode=require` for Supabase |
 | httpx / httpx2 | httpx2 2.16.0 (test client; Starlette deprecates httpx there) | Outbound httpx pinned when the first outbound call lands; explicit timeouts |
 | structlog | 26.1.0 | JSON to stdout, `format_exc_info` (no locals in tracebacks) |

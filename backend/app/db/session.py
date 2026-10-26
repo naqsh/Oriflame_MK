@@ -1,12 +1,13 @@
-"""SQLAlchemy engine for the Supabase PostgreSQL database.
+"""SQLAlchemy engine, session factory and the get_db dependency (Supabase PostgreSQL)."""
 
-OR-003 needs only the engine (for the readiness check); OR-004 adds the session
-factory and the get_db dependency here.
-"""
-
+from collections.abc import Iterator
 from functools import lru_cache
+from typing import Annotated
 
-from sqlalchemy import Engine, create_engine
+from fastapi import Depends
+from sqlalchemy import Engine, create_engine, make_url
+from sqlalchemy.exc import OperationalError
+from sqlalchemy.orm import Session, sessionmaker
 
 from backend.app.core.config import Settings, get_config_provider
 
@@ -15,6 +16,8 @@ POOL_SIZE = 5
 MAX_OVERFLOW = 5
 POOL_TIMEOUT_SECONDS = 5
 CONNECT_TIMEOUT_SECONDS = 5
+
+_SUPABASE_DIRECT_HOST_SUFFIX = ".supabase.co"
 
 
 def create_db_engine(
@@ -34,3 +37,37 @@ def create_db_engine(
 def get_engine() -> Engine:
     """Process-wide engine; a FastAPI dependency."""
     return create_db_engine(get_config_provider().get_settings())
+
+
+@lru_cache(maxsize=1)
+def get_session_factory() -> sessionmaker[Session]:
+    return sessionmaker(bind=get_engine(), autoflush=False, expire_on_commit=False)
+
+
+def get_db(
+    factory: Annotated[sessionmaker[Session], Depends(get_session_factory)],
+) -> Iterator[Session]:
+    """One session per request. Services commit; close() rolls back anything left open."""
+    session = factory()
+    try:
+        yield session
+    finally:
+        session.close()
+
+
+def describe_connection_error(exc: OperationalError, settings: Settings) -> str:
+    """Actionable, URL-free explanation of a failed database connection."""
+    driver_message = str(exc.orig).lower()
+    if "password authentication failed" in driver_message:
+        return (
+            "Database authentication failed. Check the password in POSTGRES_URL: remove the "
+            "[ ] from the Supabase template and URL-encode special characters."
+        )
+    host = (make_url(settings.postgres_url.get_secret_value()).host or "").lower()
+    message = "Could not connect to the database in POSTGRES_URL."
+    if host.startswith("db.") and host.endswith(_SUPABASE_DIRECT_HOST_SUFFIX):
+        message += (
+            " The Supabase direct host is IPv6-only; on IPv4-only networks use the "
+            "Session pooler connection string (port 5432)."
+        )
+    return message
