@@ -37,8 +37,8 @@ Use compatible stable releases and **record the pinned versions here** when MVP 
 | psycopg | 3.x | `POSTGRES_URL` normalised to `postgresql+psycopg://`; `sslmode=require` for Supabase |
 | httpx | _pin at scaffold_ | Explicit timeouts |
 | structlog | _pin at scaffold_ | |
-| pytest / pytest-cov | _pin at scaffold_ | |
-| ruff / mypy | _pin at scaffold_ | |
+| pytest / pytest-cov | pytest 9.1.1 (pytest-cov not yet added) | |
+| ruff / mypy | ruff 0.17.2 / mypy 2.4.0 | Run mypy as `uv run python -m mypy` on Windows (see lessons) |
 
 ### Frontend (TypeScript)
 
@@ -59,7 +59,7 @@ Use compatible stable releases and **record the pinned versions here** when MVP 
 |---|---|
 | Database | Supabase (managed PostgreSQL; version per project — check Dashboard → Settings → Infrastructure) |
 | Test database | PostgreSQL matching the Supabase major version (container or `supabase start`) |
-| Node.js | LTS (pinned in `.nvmrc`) |
+| Node.js | 24 LTS (pinned in `.nvmrc`) |
 | Redis / background jobs | Not used unless justified by actual requirements |
 
 ---

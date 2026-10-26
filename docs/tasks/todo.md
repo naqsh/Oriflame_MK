@@ -6,16 +6,20 @@
 
 ## Current Epic
 
-_None started — next: OR-E1 (MVP 1: Project Scaffold). See `docs/PLAN.md`._
+**OR-E1 — MVP 1: Project Scaffold** on branch `epic/E1-project-scaffold` (from `epic/autonomus-implementation`). See `docs/PLAN.md`.
 
 ### Plan
 
-- [ ] _Step 1_
-- [ ] _Step 2_
+- [x] OR-001: integration branch `epic/autonomus-implementation` created from `origin/main` and pushed
+- [x] OR-001: local branch `epic/E1-project-scaffold` created (the user commits and pushes it by hand)
+- [x] OR-001: `.env.example`, `.nvmrc` (Node 24), `pyproject.toml` + `uv.lock` (ruff, mypy strict, pytest)
+- [ ] OR-002: typed settings and ConfigProvider
+- [ ] OR-003 onward: see `docs/jira-tickets-json/OR-E1-mvp1-scaffold.json`
 
 ### Assumptions
 
-- _List assumptions stated before implementation._
+- `[tool.uv] package = false` until OR-003 adds the `backend` package.
+- The user commits and pushes epic branch work themselves.
 
 ### Verification
 
