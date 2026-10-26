@@ -41,7 +41,10 @@ backend/
 │   │   └── health.py           # GET /health, GET /health/ready (root, not versioned)
 │   ├── api/v1/
 │   │   ├── router.py           # api_router, mounted at /api/v1 (no endpoints yet)
-│   │   └── endpoints/          # (planned) products, categories, search, availability, referral, admin
+│   │   └── endpoints/
+│   │       ├── categories.py   # GET /api/v1/categories (tree), /api/v1/categories/{slug}
+│   │       ├── products.py     # GET /api/v1/products, /api/v1/products/{slug}
+│   │       └── search.py       # GET /api/v1/search; (planned) referral, admin
 │   ├── core/
 │   │   ├── config.py           # Settings, ReferralConfig, ConfigProvider; ALLOWED_REFERRAL_HOSTS (referral host allow-list)
 │   │   ├── logging.py          # structlog JSON + RequestContextMiddleware (X-Request-ID, request_completed)
@@ -54,16 +57,23 @@ backend/
 │   │   └── catalogue.py        # Product, ProductImage, Category, product_categories, CatalogueSyncRun
 │   ├── schemas/
 │   │   ├── catalogue.py        # ProductRecord, ImageRecord, CategoryRecord (validated sync input)
+│   │   ├── categories.py       # CategoryTree, CategoryNode, CategoryDetail (ancestors, children)
+│   │   ├── products.py         # ProductQuery, ProductPage, ProductSummary, ProductDetail, Availability
 │   │   ├── errors.py           # ErrorResponse
 │   │   └── health.py           # HealthResponse, ReadinessResponse
 │   ├── repositories/           # DB access only, no HTTP or business logic
+│   │   ├── category_reads.py   # all_categories, visible_product_ids_by_category
 │   │   ├── categories.py       # upsert_categories (two-pass parents), category_ids_by_source
 │   │   ├── outcomes.py         # UpsertOutcome (created/updated/unchanged), WAS_INSERTED
+│   │   ├── product_reads.py    # Visible-only listing (filters, sorts, descendant categories), detail, related
 │   │   ├── products.py         # upsert_product: row + images + category links in one savepoint
 │   │   ├── slugs.py            # new_slug: collision check against the database
 │   │   └── sync_runs.py        # start/finish/fail_stale_runs, catalogue_sync_lock (advisory lock)
 │   ├── services/
-│   │   ├── health.py           # ReadinessService (SELECT 1); (planned) products, availability, referral (ReferralService)
+│   │   ├── categories.py       # CategoryService: tree, detail, break_cycles
+│   │   ├── availability.py     # describe/availability_for: honest labels, freshness window, no quantities
+│   │   ├── health.py           # ReadinessService (SELECT 1); (planned) referral (ReferralService)
+│   │   ├── products.py         # ProductService: list/get, ProductNotFoundError
 │   │   └── slugs.py            # slugify + deterministic collision suffix (source id)
 │   ├── integrations/
 │   │   └── oriflame/
@@ -82,7 +92,8 @@ backend/
 │   └── versions/
 │       ├── 001_baseline.py     # Empty schema; RLS on alembic_version
 │       ├── 002_catalogue_schema.py  # Catalogue tables + sync_run_status enum; RLS on each
-│       └── 003_product_source.py    # products.source (indexed; existing rows backfilled dev_fixture)
+│       ├── 003_product_source.py    # products.source (indexed; existing rows backfilled dev_fixture)
+│       └── 004_product_search.py    # generated search_vector + GIN; pg_trgm (extensions schema) name index
 └── tests/
     ├── conftest.py             # clean_env, app/client/async_client, TEST_POSTGRES_URL db fixtures
     ├── unit/                   # config, db session, slugs, catalogue schemas, sources (fixture, mocked HTTP)
@@ -214,6 +225,47 @@ Why each step is there: [`docs/learning/2026-10-idempotent-catalogue-upserts.md`
 - Versioned under `/api/v1`.
 - Typed Pydantic response models; use `fastapi.status` constants.
 - List endpoints accept `page`/`page_size` (bounded) and return total counts.
+- Query parameters are one Pydantic model (`Annotated[Model, Query()]`, `extra="forbid"`), so unknown or invalid parameters return 422 before any query runs. Path slugs are validated with `SLUG_PATTERN`.
+
+### Products API (OR-018)
+
+| Endpoint | Behaviour |
+|---|---|
+| `GET /api/v1/products` | Visible products only. `category` (slug; includes subcategories), `featured` (`true`: only `is_featured`; `false`: only the others), `min_price`/`max_price` (products without a price never match), `sort` (`name_asc` default, `name_desc`, `price_asc`, `price_desc`, `newest`; unknown prices last), `page` (from 1), `page_size` (1 to 100, default 24). Returns `{items, total, page, page_size}`; a page past the end returns empty `items` with the real `total`. An unknown category returns no items |
+| `GET /api/v1/products/{slug}` | Detail with images (by position), categories, `sku`, `description`, `source_url`, `last_synced_at` and up to 4 `related` products (shared category, by name). Hidden or unknown slugs return 404 `{"detail": "Product not found"}` |
+
+### Availability (OR-021)
+
+`services/availability.py` is the only place availability wording is decided:
+
+| Status | When | Label |
+|---|---|---|
+| `verified_in_stock` | A source snapshot says in stock and was checked within `AVAILABILITY_MAX_AGE_HOURS` (default 24) | "In stock at Oriflame when last checked", with `checked_at` |
+| `verified_out_of_stock` | Same, out of stock | "Out of stock at Oriflame when last checked", with `checked_at` |
+| `not_confirmed` | No snapshot, or one that is stale, future-dated or without a timezone | "Availability not confirmed" in lists, "Check availability at Oriflame" on detail |
+
+Labels never say "now" or "live", and stock quantities are never returned. No source provides availability today (ADR-001; no availability table), so `snapshot_for` returns `None` and every product is `not_confirmed`. The product detail already carries availability, so there is no separate `/availability/{slug}` endpoint.
+
+### Search API (OR-020)
+
+`GET /api/v1/search?q=&page=&page_size=` returns the same `{items, total, page, page_size}` shape as the products list, visible products only.
+
+- `q` is trimmed and must be 1 to 100 characters (otherwise 422). Unknown parameters return 422.
+- **Full-text first:** `products.search_vector` is a generated column, `name` weighted A and `description` B, using the `english` configuration (stems "creams" to "cream"), with a GIN index. The query is `websearch_to_tsquery`, which accepts quotes, `OR`, `-`, punctuation and Urdu without syntax errors; `q` is always a bound parameter. Order: exact name match first, then `ts_rank_cd`, then name.
+- **Fuzzy fallback:** only when full-text finds nothing, `extensions.word_similarity(q, name) >= 0.3`, ordered by similarity, for misspellings like "peech". There is a trigram GIN index on `name` (`extensions.gin_trgm_ops`), but the fallback's function call does not use it; that is fine at fixture scale and should switch to the `%>` operator if the catalogue grows large.
+- **Rate limiting** is deferred to OR-E6, which adds one shared limiter for all public endpoints.
+- Migration `004_product_search` creates the `extensions` schema if missing (plain PostgreSQL) and `pg_trgm` in it (the Supabase convention). Its downgrade keeps the extension.
+
+### Categories API (OR-019)
+
+| Endpoint | Behaviour |
+|---|---|
+| `GET /api/v1/categories` | The whole tree: `{items: [{slug, name, product_count, children}]}`, siblings by name. Empty categories are included with count 0 (the frontend may hide them) |
+| `GET /api/v1/categories/{slug}` | `{slug, name, product_count, ancestors, children}`. `ancestors` runs from the root to the direct parent (for breadcrumbs). Unknown slug: 404 `{"detail": "Category not found"}`; invalid slug: 422 |
+
+`product_count` is the number of distinct visible products in the category and all its subcategories, the same set `GET /api/v1/products?category={slug}` returns. Cyclic parent links from a source are broken in memory at the lowest id in each cycle and logged as `category_cycle_detected`; the stored data is not changed.
+
+Every product carries `price_pkr` (a decimal string, or `null` for "Price not available"), `availability` (`not_confirmed` with "Availability not confirmed" in lists and "Check availability at Oriflame" on detail) and `data_source` / `is_development_data`, so the UI can flag fixture data.
 - Admin endpoints depend on an authentication + authorisation dependency — never publicly accessible.
 - Narrow CORS (`CORS_ORIGINS`), secure headers, and rate limits where appropriate.
 

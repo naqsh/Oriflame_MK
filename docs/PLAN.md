@@ -75,7 +75,7 @@ Fresh autonomous kickoff only (not every "hi"): then read `docs/KICKOFF-PROMPT.m
 
 ---
 
-## MVP 3: Storefront ⬜
+## MVP 3: Storefront ✅
 
 **Epic:** OR-E3  
 **Branch:** `epic/E3-storefront`  
@@ -83,17 +83,17 @@ Fresh autonomous kickoff only (not every "hi"): then read `docs/KICKOFF-PROMPT.m
 
 | Task ID | Summary | Area | Effort | Depends on | Status | Agent |
 |---|---|---|---|---|---|---|
-| OR-018 | Products API: listing with filter/sort/pagination and product detail | Backend | M | OR-E2 | ⬜ | Coding |
-| OR-019 | Categories API | Backend | S | OR-018 | ⬜ | Coding |
-| OR-020 | Search API with PostgreSQL full-text search | Backend / Database | M | OR-018 | ⬜ | Coding |
-| OR-021 | Availability service and honest labels | Backend | S | OR-018 | ⬜ | Coding |
-| OR-022 | Frontend catalogue schemas and product components | Frontend | M | OR-018, OR-019, OR-021 | ⬜ | Coding |
-| OR-023 | Homepage | Frontend | M | OR-022 | ⬜ | Coding |
-| OR-024 | Product listing and category pages with filters and sorting | Frontend | M | OR-022 | ⬜ | Coding |
-| OR-025 | Product detail page | Frontend | M | OR-022, OR-021 | ⬜ | Coding |
-| OR-026 | Search results page | Frontend | S | OR-020, OR-022 | ⬜ | Coding |
-| OR-027 | Local shopping list | Frontend | M | OR-025 | ⬜ | Coding |
-| OR-028 | Documentation sync for storefront | Docs | S | OR-018–OR-027 | ⬜ | Docs |
+| OR-018 | Products API: listing with filter/sort/pagination and product detail | Backend | M | OR-E2 | ✅ | Coding |
+| OR-019 | Categories API | Backend | S | OR-018 | ✅ | Coding |
+| OR-020 | Search API with PostgreSQL full-text search | Backend / Database | M | OR-018 | ✅ | Coding |
+| OR-021 | Availability service and honest labels | Backend | S | OR-018 | ✅ | Coding |
+| OR-022 | Frontend catalogue schemas and product components | Frontend | M | OR-018, OR-019, OR-021 | ✅ | Coding |
+| OR-023 | Homepage | Frontend | M | OR-022 | ✅ | Coding |
+| OR-024 | Product listing and category pages with filters and sorting | Frontend | M | OR-022 | ✅ | Coding |
+| OR-025 | Product detail page | Frontend | M | OR-022, OR-021 | ✅ | Coding |
+| OR-026 | Search results page | Frontend | S | OR-020, OR-022 | ✅ | Coding |
+| OR-027 | Local shopping list | Frontend | M | OR-025 | ✅ | Coding |
+| OR-028 | Documentation sync for storefront | Docs | S | OR-018–OR-027 | ✅ | Docs |
 
 ---
 

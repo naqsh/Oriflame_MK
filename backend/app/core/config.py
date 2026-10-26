@@ -111,6 +111,8 @@ class Settings(BaseSettings):
     oriflame_referral_url: HttpUrl | None = None
     oriflame_referral_method: ReferralMethod = "official_url"
     catalogue_source: CatalogueSourceName = "fixture"
+    # Source availability older than this is shown as "not confirmed" (OR-021).
+    availability_max_age_hours: int = Field(default=24, ge=1, le=720)
 
     @field_validator("postgres_url", mode="before")
     @classmethod

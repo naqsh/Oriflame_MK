@@ -85,6 +85,7 @@ ORIFLAME_REFERRAL_METHOD=official_url
 
 # Catalogue source (ADR-001): only "fixture" until a permitted source is accepted
 CATALOGUE_SOURCE=fixture
+AVAILABILITY_MAX_AGE_HOURS=24
 
 # Tests only — local PostgreSQL, never the Supabase project
 TEST_POSTGRES_URL=postgresql://postgres:postgres@localhost:54322/postgres
@@ -103,6 +104,7 @@ Rules:
 - One typed `Settings` class in `backend/app/core/config.py`, validated once at startup.
 - `POSTGRES_URL` is a required `SecretStr`; scheme normalised to `postgresql+psycopg://`; never logged.
 - `ORIFLAME_REFERRAL_METHOD` is a `Literal["official_url", "manual_code"]`.
+- `AVAILABILITY_MAX_AGE_HOURS` is an int from 1 to 720 (default 24).
 - `CATALOGUE_SOURCE` is a `Literal["fixture"]`; unknown values fail at startup. Fixtures refuse to load in production.
 - `ORIFLAME_REFERRAL_URL` is validated as HTTPS with an allow-listed official Oriflame host.
 - Settings are consumed through a `ConfigProvider` interface (env provider for the MVP).
