@@ -3,6 +3,7 @@ import { connection } from "next/server";
 
 import { DevDataBanner } from "@/components/layout/dev-data-banner";
 import { ProductGrid } from "@/components/product/product-grid";
+import { ProductGridSkeleton } from "@/components/product/product-grid-skeleton";
 import { getCategories, getProducts } from "@/lib/api/catalogue";
 import { ApiError } from "@/lib/api/client";
 import type { CategoryNode, ProductSummary } from "@/lib/api/schemas/catalogue";
@@ -97,11 +98,5 @@ export async function HomeCatalogue() {
 
 /** Same footprint as the product grid, so the layout does not jump when data arrives. */
 export function HomeCatalogueFallback() {
-  return (
-    <div aria-hidden="true" className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-      {Array.from({ length: 4 }, (_, index) => (
-        <div key={index} className="aspect-[3/4] animate-pulse rounded-lg bg-muted" />
-      ))}
-    </div>
-  );
+  return <ProductGridSkeleton />;
 }

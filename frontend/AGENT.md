@@ -34,22 +34,29 @@ frontend/
 ├── app/
 │   ├── layout.tsx              # Root layout: html lang, SiteShell, title template + description
 │   ├── page.tsx                # Homepage: static hero + how-it-works, HomeCatalogue streamed per request
+│   ├── products/page.tsx       # All products: static h1, ProductsResults streamed (filters, sort, pages)
+│   ├── categories/[slug]/page.tsx  # CategoryContent streamed: breadcrumb, h1, subcategories, listing
+│   ├── not-found.tsx           # Root 404 UI (links home and to all products)
 │   ├── status/page.tsx         # Backend status (noindex), request-time BackendStatus
 │   ├── globals.css             # Tailwind 4 + shadcn theme tokens
-│   └── (planned) products/, categories/[slug]/, search/, referral/, about/, contact/,
+│   └── (planned) products/[slug]/, search/, referral/, about/, contact/,
 │       privacy/, terms/, admin/, sitemap.ts, robots.ts (JSON-LD in layout: OR-E5)
 ├── components/
+│   ├── catalogue/              # products-results, category-content (page bodies, testable)
+│   ├── filters/                # filter-panel, sort-select (Client), pagination, product-listing
 │   ├── home/                   # home-catalogue (featured or latest products, categories), how-it-works
 │   ├── layout/                 # site-header (search + category nav), site-footer (disclaimer), site-shell,
 │   │                           # category-nav (request-time, omitted if the API fails), dev-data-banner
 │   ├── product/                # price, availability-badge, product-image, product-card, product-grid
 │   ├── search/                 # search-box (GET form to /search, no JS)
 │   ├── status/                 # backend-status (Server Component)
-│   └── filters/, referral/, ui/   # (planned; empty, .gitkeep)
+│   └── referral/, ui/          # (planned; empty, .gitkeep)
 ├── lib/
 │   ├── api/                    # client.ts (fetchJson, ApiError), catalogue.ts (getProducts, getProduct,
 │   │                           # getCategories, getCategory, searchProducts), schemas/{catalogue,health}.ts
+│   ├── categories.ts           # categoryOptions: flatten the tree for a <select>
 │   ├── images.ts               # AUTHORISED_IMAGE_HOSTS (empty, ADR-001), authorisedImageSrc
+│   ├── listing.ts              # parseListingParams (normalise URL state), listingHref, SORT_OPTIONS
 │   ├── seo/                    # site.ts (name, description, disclaimer); (planned) metadata/JSON-LD builders
 │   └── utils/                  # cn.ts (shadcn class helper)
 ├── types/                      # (planned; empty, .gitkeep)
@@ -78,6 +85,16 @@ Adjust structure when useful, but keep modules cohesive and avoid oversized file
 | `CategoryNav` | Request-time (`connection()`) inside `Suspense` in the header; top-level categories with products; omitted, with a log line, if the API fails. Because of it every route is a Partial Prerender (`◐`) |
 
 All of these are Server Components; none needs `"use client"`.
+
+### Product listing and category pages (OR-024)
+
+- **URL is the state:** `?category=&min_price=&max_price=&sort=&page=`, so results are shareable and back/forward restore them. `lib/listing.ts` normalises anything invalid (negative or non-numeric page, unknown sort, malformed price or slug) to defaults, so a bad URL never becomes a backend 422. A minimum price above the maximum is swapped, and the page says so.
+- **Client Components only where needed:** `FilterPanel` is a GET form (it works without JavaScript; with it, `router.push` keeps navigation client-side) and `SortSelect` pushes on change. Both reset to page 1 and are keyed by the URL state so their fields follow back/forward. Everything else is a Server Component.
+- **Accessibility:** labelled fields; the result count is `role="status"` with `aria-live="polite"`; pagination is a `nav` with `rel="prev"`/`rel="next"` links and "Page N of M"; breadcrumbs mark the current page with `aria-current`.
+- **States:** no results shows "No products match these filters" with a "Clear filters" link; a page past the end offers "Go to the first page"; a backend failure shows a short notice.
+- **Category pages** take the category from the path (`?category=` is ignored there), show subcategories that have products, and have no category filter.
+- **Not found status:** page bodies read `params`/`searchParams`, which Cache Components only allows inside `Suspense`, so `notFound()` runs after streaming starts. Next.js then serves the not-found UI with `<meta name="robots" content="noindex">` and **HTTP 200** (a soft 404; see `node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/loading.md`, "Status codes"). A real 404 status needs a check in Proxy before rendering; that is left for OR-E5 (SEO).
+- **Tests:** `__tests__/render-server.tsx` resolves nested async Server Components so page bodies can be rendered in Vitest.
 
 ### Homepage rendering (OR-023)
 
