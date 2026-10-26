@@ -6,7 +6,7 @@
 
 ## Current Epic
 
-**OR-E2 — MVP 2: Catalogue Data** on branch `epic/E2-catalogue-data` (from `epic/autonomus-implementation` at `f3b4a5a`). See `docs/PLAN.md`.
+**OR-E2 — MVP 2: Catalogue Data**, merged in PR naqsh/Oriflame_MK#3 (`46f234c`). Next epic: OR-E3 (not started). See `docs/PLAN.md`.
 
 ### Plan
 
@@ -98,6 +98,7 @@ Found along the way: without `connection()`, `/status` was prerendered at build 
 | Epic | Summary | Completed |
 |---|---|---|
 | OR-E1 | MVP 1 project scaffold (OR-001 to OR-009), PR naqsh/Oriflame_MK#2, merge commit `b211b58` | 2026-10-26 |
+| OR-E2 | MVP 2 catalogue data (OR-010 to OR-017), development fixtures only (ADR-001 Proposed), PR naqsh/Oriflame_MK#3, merge commit `46f234c` | 2026-10-26 |
 
 ---
 
