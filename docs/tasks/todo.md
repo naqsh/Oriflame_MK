@@ -67,7 +67,7 @@ Found along the way: without `connection()`, `/status` was prerendered at build 
 
 | Epic | Summary | Completed |
 |---|---|---|
-| OR-E1 | MVP 1 project scaffold (OR-001 to OR-009), PR naqsh/Oriflame_MK#2 | 2026-10-26 (pending merge) |
+| OR-E1 | MVP 1 project scaffold (OR-001 to OR-009), PR naqsh/Oriflame_MK#2, merge commit `b211b58` | 2026-10-26 |
 
 ---
 
