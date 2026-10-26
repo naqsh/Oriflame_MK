@@ -37,13 +37,14 @@ frontend/
 │   ├── products/page.tsx       # All products: static h1, ProductsResults streamed (filters, sort, pages)
 │   ├── products/[slug]/page.tsx    # Product detail: ProductDetailContent streamed
 │   ├── categories/[slug]/page.tsx  # CategoryContent streamed: breadcrumb, h1, subcategories, listing
+│   ├── search/page.tsx         # Search (noindex): SearchResults streamed
 │   ├── not-found.tsx           # Root 404 UI (links home and to all products)
 │   ├── status/page.tsx         # Backend status (noindex), request-time BackendStatus
 │   ├── globals.css             # Tailwind 4 + shadcn theme tokens
-│   └── (planned) search/, referral/, about/, contact/,
+│   └── (planned) referral/, about/, contact/,
 │       privacy/, terms/, admin/, sitemap.ts, robots.ts (JSON-LD in layout: OR-E5)
 ├── components/
-│   ├── catalogue/              # products-results, category-content, product-detail (page bodies, testable)
+│   ├── catalogue/              # products-results, category-content, product-detail, search-results (page bodies)
 │   ├── filters/                # filter-panel, sort-select (Client), pagination, product-listing
 │   ├── home/                   # home-catalogue (featured or latest products, categories), how-it-works
 │   ├── layout/                 # site-header (search + category nav), site-footer (disclaimer), site-shell,
@@ -57,6 +58,7 @@ frontend/
 │   │                           # getCategories, getCategory, searchProducts), schemas/{catalogue,health}.ts
 │   ├── categories.ts           # categoryOptions: flatten the tree for a <select>
 │   ├── images.ts               # AUTHORISED_IMAGE_HOSTS (empty, ADR-001), authorisedImageSrc
+│   ├── search.ts               # parseSearchParams (trim, cut to 100), searchHref
 │   ├── text.ts                 # toParagraphs: source text/HTML to plain paragraphs (never raw HTML)
 │   ├── listing.ts              # parseListingParams (normalise URL state), listingHref, SORT_OPTIONS
 │   ├── seo/                    # site.ts (name, description, disclaimer); (planned) metadata/JSON-LD builders
@@ -87,6 +89,15 @@ Adjust structure when useful, but keep modules cohesive and avoid oversized file
 | `CategoryNav` | Request-time (`connection()`) inside `Suspense` in the header; top-level categories with products; omitted, with a log line, if the API fails. Because of it every route is a Partial Prerender (`◐`) |
 
 All of these are Server Components; none needs `"use client"`.
+
+### Search results page (OR-026)
+
+- `/search?q=&page=` reads the query from the URL. `q` is trimmed and cut to 100 characters (the backend limit) before any request; an empty or whitespace-only `q` shows a prompt and calls no API.
+- The page has its own GET search form with the query filled in (the header box lives in the static layout shell, which cannot read the URL without making every page dynamic). Both forms work without JavaScript.
+- The heading echoes the query as React text, so markup in a query is shown escaped, never rendered.
+- Results reuse `ProductGrid`, the announced count and `Pagination` (which now takes an `hrefFor(page)` function, shared with the listing pages).
+- With no results it suggests the 4 categories with the most products plus "Browse all products"; if categories fail, only the message shows. HTTP 429 shows "Search is busy right now. Please try again shortly."; other failures show "temporarily unavailable".
+- `metadata.robots` is `noindex, follow` (to be finalised with the other SEO rules in OR-E5).
 
 ### Product detail page (OR-025)
 

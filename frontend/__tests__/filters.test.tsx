@@ -6,6 +6,7 @@ import { FilterPanel } from "@/components/filters/filter-panel";
 import { Pagination } from "@/components/filters/pagination";
 import { SortSelect } from "@/components/filters/sort-select";
 import { Breadcrumbs } from "@/components/layout/breadcrumbs";
+import { listingHref } from "@/lib/listing";
 
 const push = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
@@ -88,10 +89,10 @@ describe("Pagination", () => {
   it("links previous and next pages with rel attributes", () => {
     render(
       <Pagination
-        basePath="/products"
-        params={{ sort: "newest", page: 2 }}
+        page={2}
         total={60}
         pageSize={24}
+        hrefFor={(page) => listingHref("/products", { sort: "newest", page })}
       />,
     );
 
@@ -111,27 +112,27 @@ describe("Pagination", () => {
 
   it("disables the missing direction on the first and last page", () => {
     const { rerender } = render(
-      <Pagination basePath="/p" params={{ sort: "name_asc", page: 1 }} total={30} pageSize={24} />,
+      <Pagination page={1} total={30} pageSize={24} hrefFor={(page) => listingHref("/p", { page })} />,
     );
     expect(screen.queryByRole("link", { name: "Previous page" })).not.toBeInTheDocument();
     expect(screen.getByText("Previous page")).toHaveAttribute("aria-disabled", "true");
 
     rerender(
-      <Pagination basePath="/p" params={{ sort: "name_asc", page: 2 }} total={30} pageSize={24} />,
+      <Pagination page={2} total={30} pageSize={24} hrefFor={(page) => listingHref("/p", { page })} />,
     );
     expect(screen.queryByRole("link", { name: "Next page" })).not.toBeInTheDocument();
   });
 
   it("is hidden when everything fits on one page", () => {
     const { container } = render(
-      <Pagination basePath="/p" params={{ sort: "name_asc", page: 1 }} total={5} pageSize={24} />,
+      <Pagination page={1} total={5} pageSize={24} hrefFor={(page) => listingHref("/p", { page })} />,
     );
     expect(container).toBeEmptyDOMElement();
   });
 
   it("points back into range from a page beyond the last", () => {
     render(
-      <Pagination basePath="/p" params={{ sort: "name_asc", page: 9 }} total={30} pageSize={24} />,
+      <Pagination page={9} total={30} pageSize={24} hrefFor={(page) => listingHref("/p", { page })} />,
     );
     expect(screen.getByRole("link", { name: "Previous page" })).toHaveAttribute("href", "/p?page=2");
   });

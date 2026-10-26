@@ -90,7 +90,12 @@ export async function ProductListing({
           ) : null}
         </div>
       )}
-      <Pagination basePath={basePath} params={params} total={page.total} pageSize={LISTING_PAGE_SIZE} />
+      <Pagination
+        page={params.page}
+        total={page.total}
+        pageSize={LISTING_PAGE_SIZE}
+        hrefFor={(target) => listingHref(basePath, { ...params, page: target })}
+      />
     </div>
   );
 }
