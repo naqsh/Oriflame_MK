@@ -41,6 +41,9 @@ playwright/.cache/
 supabase/.branches/
 supabase/.temp/
 
+# --- Next.js dev server writes this agent notice on every start ---
+frontend/AGENTS.md
+
 # --- Claude Code personal settings ---
 .claude/settings.local.json
 

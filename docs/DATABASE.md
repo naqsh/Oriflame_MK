@@ -44,6 +44,8 @@ POSTGRES_URL=postgresql://postgres.<project-ref>:<password>@aws-0-<region>.poole
 - Scheme normalised for SQLAlchemy: `postgres://` / `postgresql://` → `postgresql+psycopg://`.
 - `sslmode=require` enforced when the host is a Supabase host.
 - Missing or malformed `POSTGRES_URL` fails startup with a message that never includes the URL.
+- Port `6543` (transaction pooler) is rejected at startup.
+- Implemented in `backend/app/core/config.py` (`normalise_postgres_url`, `load_settings` → `ConfigurationError`).
 
 ---
 
@@ -61,6 +63,7 @@ POSTGRES_URL=postgresql://postgres.<project-ref>:<password>@aws-0-<region>.poole
 Supabase exposes tables in the `public` schema through its auto-generated Data API, reachable with the project's public anon key. Because this app reads and writes only through FastAPI:
 
 - Every migration that creates a table in `public` also runs `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` and defines **no** policies — the Data API returns nothing, while the backend's direct `postgres` connection is unaffected.
+- The baseline (`001_baseline`) does the same for `alembic_version`, which Alembic creates in `public`. The migration template (`backend/alembic/script.py.mako`) carries this reminder.
 - A test asserts RLS is enabled on every application table.
 - Optionally also remove `public` from *Exposed schemas* in Supabase API settings.
 - The anon and `service_role` keys are not used by this app and must never be added to the frontend.

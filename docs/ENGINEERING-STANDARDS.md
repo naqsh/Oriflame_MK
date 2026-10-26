@@ -29,29 +29,30 @@ Use compatible stable releases and **record the pinned versions here** when MVP 
 
 | Package | Version | Notes |
 |---|---|---|
-| Python | 3.12+ | Managed by `uv` |
-| FastAPI | _pin at scaffold_ | |
-| Pydantic / pydantic-settings | 2.x | |
-| SQLAlchemy | 2.x | Typed declarative models |
-| Alembic | _pin at scaffold_ | |
-| psycopg | 3.x | `POSTGRES_URL` normalised to `postgresql+psycopg://`; `sslmode=require` for Supabase |
-| httpx | _pin at scaffold_ | Explicit timeouts |
-| structlog | _pin at scaffold_ | |
-| pytest / pytest-cov | _pin at scaffold_ | |
-| ruff / mypy | _pin at scaffold_ | |
+| Python | 3.14 (`.python-version`; requires >=3.12) | Managed by `uv`; CI uses the same pin |
+| FastAPI | 0.162.0 (Starlette 1.10.0, uvicorn 0.54.0) | App factory: `backend.app.main:create_app` |
+| Pydantic / pydantic-settings | pydantic 2.14.1 / pydantic-settings 2.16.1 | mypy runs the `pydantic.mypy` plugin |
+| SQLAlchemy | 2.1.6 | Typed declarative models |
+| Alembic | 1.20.1 | `alembic.ini` at repo root; scripts in `backend/alembic/`; ruff-formats new revisions |
+| psycopg[binary] | 3.3.6 | `POSTGRES_URL` normalised to `postgresql+psycopg://`; `sslmode=require` for Supabase |
+| httpx / httpx2 | httpx 0.28.1 (AsyncClient tests) / httpx2 2.16.0 (Starlette TestClient) | Outbound httpx pinned when the first outbound call lands; explicit timeouts |
+| structlog | 26.1.0 | JSON to stdout, `format_exc_info` (no locals in tracebacks) |
+| pytest / pytest-cov | pytest 9.1.1 / pytest-cov 7.1.0 (coverage 7.17.0, fail_under 80) | pytest-asyncio 1.4.1 (auto mode), pytest-socket 0.8.1 (localhost only); `db` marker needs TEST_POSTGRES_URL |
+| ruff / mypy | ruff 0.17.2 / mypy 2.4.0 | Run mypy as `uv run python -m mypy` on Windows (see lessons) |
+| pip-audit | 2.10.1 | CI dependency audit; on this Windows setup run `uv run python -m pip_audit --skip-editable` |
 
 ### Frontend (TypeScript)
 
 | Package | Version | Notes |
 |---|---|---|
-| Next.js | _pin at scaffold_ | App Router only |
-| React | _pin at scaffold_ | |
-| TypeScript | 5.x | `strict: true` |
-| Tailwind CSS | _pin at scaffold_ | |
-| shadcn/ui | — | Where useful |
-| Zod | _pin at scaffold_ | |
-| React Hook Form | _pin at scaffold_ | Where appropriate |
-| Vitest / Testing Library / Playwright | _pin at scaffold_ | |
+| Next.js | 16.4.3 | App Router only; `cacheComponents` on; `images.remotePatterns` empty until OR-E2 |
+| React | 19.3.0 | |
+| TypeScript | 5.9.3 | `strict`, `noUncheckedIndexedAccess`, `noImplicitReturns` |
+| Tailwind CSS | 4.3.3 | CSS-first config in `app/globals.css` |
+| shadcn/ui | 4.22.1 (style base-nova) | No primitives yet; `cn` helper at `lib/utils/cn.ts` |
+| Zod | 4.6.7 | API responses validated in `lib/api/`; extra fields stripped |
+| React Hook Form | not installed | Add with the first form (no forms in MVP 1) |
+| Vitest / Testing Library / Playwright | Vitest 5.0.5 (+ coverage-v8) / RTL 16.3.3 + user-event / Playwright 1.64.1 (Chromium) | No `@vitejs/plugin-react` (peer conflict; not needed). Coverage: 75% lines, 90% for lib/api and lib/seo |
 
 ### Infrastructure
 
@@ -59,7 +60,7 @@ Use compatible stable releases and **record the pinned versions here** when MVP 
 |---|---|
 | Database | Supabase (managed PostgreSQL; version per project — check Dashboard → Settings → Infrastructure) |
 | Test database | PostgreSQL matching the Supabase major version (container or `supabase start`) |
-| Node.js | LTS (pinned in `.nvmrc`) |
+| Node.js | 24 LTS (pinned in `.nvmrc`) |
 | Redis / background jobs | Not used unless justified by actual requirements |
 
 ---

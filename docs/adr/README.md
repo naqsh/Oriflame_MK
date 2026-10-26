@@ -78,7 +78,8 @@ What is the change that we're proposing and/or doing?
 
 | ADR | Title | Status | Date |
 |---|---|---|---|
-| — | No ADRs created yet | — | — |
+| [ADR-005](ADR-005-configuration-provider-seam.md) | Configuration provider seam | Accepted | 2026-10-26 |
+| [ADR-006](ADR-006-scaffold-toolchain-choices.md) | Scaffold toolchain choices (MVP 1) | Accepted | 2026-10-26 |
 
 ---
 
@@ -90,7 +91,7 @@ Decisions that need ADRs during implementation (ADR numbers reserved by epic tas
 2. **ADR-002 Referral method** (OR-029) — `official_url` vs `manual_code`; allowed referral hosts
 3. **ADR-003 Admin authentication** (OR-044) — session-based vs JWT vs external identity provider
 4. **ADR-004 Deployment target** (OR-052) — hosting for Next.js and FastAPI (database is Supabase — see `docs/DATABASE.md`)
-5. **Configuration provider seam** (OR-002, number assigned when written) — shape of the `ConfigProvider` interface for a future tenant-aware provider
+5. ~~Configuration provider seam~~: decided in [ADR-005](ADR-005-configuration-provider-seam.md)
 
 ---
 

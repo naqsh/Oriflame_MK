@@ -14,16 +14,16 @@ This file governs all development within the FastAPI backend, including REST end
 
 | Technology | Version | Purpose |
 |---|---|---|
-| Python | 3.12+ | Runtime |
-| FastAPI | latest stable | Web framework |
-| Pydantic | 2.x | Request/response schemas |
-| pydantic-settings | 2.x | Typed configuration (env provider) |
-| SQLAlchemy | 2.x | ORM / parameterised DB access |
-| Alembic | latest stable | Schema migrations |
+| Python | 3.14 (`.python-version`; requires >=3.12) | Runtime |
+| FastAPI | 0.162.0 | Web framework (app factory `create_app`) |
+| Pydantic | 2.14.1 | Request/response schemas |
+| pydantic-settings | 2.16.1 | Typed configuration (env provider) |
+| SQLAlchemy | 2.1.6 | ORM / parameterised DB access |
+| Alembic | 1.20.1 | Schema migrations |
 | Supabase (PostgreSQL) | per project | Persistent database (`POSTGRES_URL`) — see `docs/DATABASE.md` |
-| psycopg | 3.x | PostgreSQL driver (`postgresql+psycopg://`, `sslmode=require`) |
-| httpx | latest stable | Outbound HTTP (with timeouts) |
-| structlog | latest stable | Structured logging |
+| psycopg[binary] | 3.3.6 | PostgreSQL driver (`postgresql+psycopg://`, `sslmode=require`) |
+| httpx | 0.28.1 (tests only so far) | Outbound HTTP (with timeouts) when the first integration lands |
+| structlog | 26.1.0 | Structured logging |
 
 Use compatible stable releases and record the pinned versions in `docs/ENGINEERING-STANDARDS.md`. Redis/background jobs only when justified by actual requirements.
 
@@ -37,39 +37,41 @@ Keep a clear separation between FastAPI routers, schemas, services, repositories
 backend/
 ├── AGENT.md                    # This file
 ├── app/
+│   ├── api/
+│   │   └── health.py           # GET /health, GET /health/ready (root, not versioned)
 │   ├── api/v1/
-│   │   └── endpoints/
-│   │       ├── products.py     # Listing, detail (paginated)
-│   │       ├── categories.py   # Category tree / category products
-│   │       ├── search.py       # Search endpoint
-│   │       ├── availability.py # Availability status (verified only)
-│   │       ├── referral.py     # Referral handoff + click recording
-│   │       └── admin.py        # Protected admin endpoints
+│   │   ├── router.py           # api_router, mounted at /api/v1 (no endpoints yet)
+│   │   └── endpoints/          # (planned) products, categories, search, availability, referral, admin
 │   ├── core/
-│   │   ├── config.py           # Pydantic Settings + config-provider interface
-│   │   ├── logging.py          # structlog configuration
-│   │   └── security.py         # Admin auth, headers, rate limits
+│   │   ├── config.py           # Settings, ReferralConfig, ConfigProvider; ALLOWED_REFERRAL_HOSTS (referral host allow-list)
+│   │   ├── logging.py          # structlog JSON + RequestContextMiddleware (X-Request-ID, request_completed)
+│   │   └── security.py         # (planned, OR-E6) admin auth, headers, rate limits
 │   ├── db/
-│   │   └── session.py          # SQLAlchemy engine/session
-│   ├── models/                 # SQLAlchemy models
-│   ├── schemas/                # Pydantic request/response models
-│   ├── repositories/           # DB access (no business logic)
+│   │   └── session.py          # Engine, session factory, get_db, URL-free connection errors
+│   ├── models/
+│   │   └── base.py             # DeclarativeBase + constraint naming convention
+│   ├── schemas/
+│   │   ├── errors.py           # ErrorResponse
+│   │   └── health.py           # HealthResponse, ReadinessResponse
+│   ├── repositories/           # (planned) DB access, no business logic
 │   ├── services/
-│   │   ├── products.py
-│   │   ├── availability.py
-│   │   └── referral.py         # ReferralService — single owner of referral logic
+│   │   └── health.py           # ReadinessService (SELECT 1); (planned) products, availability, referral (ReferralService)
 │   ├── integrations/
-│   │   └── oriflame/
-│   │       ├── client.py       # Permitted-source client (timeouts, retries)
-│   │       └── catalogue.py    # Sync: idempotent upserts + sync-run records
-│   └── main.py                 # FastAPI application entry point
-├── alembic/                    # Migrations
+│   │   └── oriflame/           # (planned, OR-E2) permitted-source client + idempotent catalogue sync
+│   └── main.py                 # create_app() factory, CORS, 500 handler
+├── alembic/
+│   ├── env.py                  # URL from Settings, skips Supabase-managed schemas, URL-free errors
+│   ├── script.py.mako          # Migration template (RLS reminder)
+│   └── versions/
+│       └── 001_baseline.py     # Empty schema; RLS on alembic_version
 └── tests/
-    ├── conftest.py
-    ├── unit/
-    ├── integration/
-    └── security/
+    ├── conftest.py             # clean_env, app/client/async_client, TEST_POSTGRES_URL db fixtures
+    ├── unit/                   # config, db session
+    ├── integration/            # health, request context, migrations (db)
+    └── security/               # CORS, outbound network blocked
 ```
+
+`alembic.ini` lives at the repository root; the referral host allow-list is `ALLOWED_REFERRAL_HOSTS` in `backend/app/core/config.py` (documented in `docs/REFERRAL.md`).
 
 Adjust structure when useful, but keep modules cohesive and avoid oversized files.
 
