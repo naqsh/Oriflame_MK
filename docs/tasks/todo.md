@@ -6,7 +6,24 @@
 
 ## Current Epic
 
-**OR-E1 — MVP 1: Project Scaffold** on branch `epic/E1-project-scaffold` (from `epic/autonomus-implementation`). See `docs/PLAN.md`.
+**OR-E2 — MVP 2: Catalogue Data** on branch `epic/E2-catalogue-data` (from `epic/autonomus-implementation` at `f3b4a5a`). See `docs/PLAN.md`.
+
+### Plan
+
+- [x] OR-010: [ADR-001](../adr/ADR-001-catalogue-data-source.md) written (status **Proposed**) and indexed. Owner confirmed on 2026-10-26: no permitted source yet, so development fixtures only; images omitted (no copying, no hot-linking); no authorised image hosts. Read-only check of pk.oriflame.com (robots.txt, catalogue sitemap, one product page's JSON-LD) recorded as a rejected alternative pending written permission. The Terms and Conditions PDF was not reviewed (it starts a download).
+- [ ] OR-011: catalogue schema models and migration
+- [ ] OR-012: catalogue repositories with idempotent upserts
+- [ ] OR-013: replaceable Oriflame source adapter
+- [ ] OR-014: catalogue sync service with run recording and safe retries
+- [ ] OR-015: explicitly named development fixtures
+- [ ] OR-016: catalogue sync command-line entry point
+- [ ] OR-017: documentation sync for catalogue data
+
+---
+
+## OR-E1 record (merged in `b211b58`)
+
+**OR-E1 — MVP 1: Project Scaffold** on branch `epic/E1-project-scaffold` (from `epic/autonomus-implementation`).
 
 ### Plan
 

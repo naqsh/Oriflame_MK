@@ -20,6 +20,8 @@ Before implementing data ingestion, investigate permitted sources such as:
 
 Record the chosen source, its terms, and image/content usage rights in an ADR (`docs/adr/`). Until a permitted source is confirmed, use only explicitly named development fixtures.
 
+**Current decision:** [ADR-001](adr/ADR-001-catalogue-data-source.md) (Proposed, 2026-10-26). No permitted source is confirmed, so MVP 2 uses development fixtures only. Product images are omitted (no copying, no hot-linking) and there are no authorised image hosts.
+
 ---
 
 ## Ingestion Rules
