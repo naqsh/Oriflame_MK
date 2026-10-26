@@ -12,6 +12,7 @@ from backend.app.repositories.product_reads import (
     get_visible_product,
     list_visible_products,
     related_products,
+    search_visible_products,
 )
 from backend.app.schemas.products import (
     CategoryRef,
@@ -20,6 +21,7 @@ from backend.app.schemas.products import (
     ProductPage,
     ProductQuery,
     ProductSummary,
+    SearchQuery,
 )
 from backend.app.services.availability import availability_for
 
@@ -54,6 +56,17 @@ class ProductService:
 
     def list(self, query: ProductQuery) -> ProductPage:
         result = list_visible_products(self._session, query)
+        return ProductPage(
+            items=[_summary(product) for product in result.products],
+            total=result.total,
+            page=query.page,
+            page_size=query.page_size,
+        )
+
+    def search(self, query: SearchQuery) -> ProductPage:
+        result = search_visible_products(
+            self._session, query.q, page=query.page, page_size=query.page_size
+        )
         return ProductPage(
             items=[_summary(product) for product in result.products],
             total=result.total,

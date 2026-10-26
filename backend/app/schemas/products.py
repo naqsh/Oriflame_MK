@@ -13,6 +13,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 SLUG_PATTERN = r"^[a-z0-9]+(?:-[a-z0-9]+)*$"
 MAX_PAGE_SIZE = 100
 DEFAULT_PAGE_SIZE = 24
+SEARCH_MAX_LENGTH = 100
 
 Slug = Annotated[str, Field(min_length=1, max_length=200, pattern=SLUG_PATTERN)]
 ProductSort = Literal["name_asc", "name_desc", "price_asc", "price_desc", "newest"]
@@ -40,6 +41,16 @@ class ProductQuery(BaseModel):
         ):
             raise ValueError("min_price must not be greater than max_price")
         return self
+
+
+class SearchQuery(BaseModel):
+    """Query string for GET /api/v1/search. ``q`` is trimmed and must be 1 to 100 chars."""
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    q: str = Field(min_length=1, max_length=SEARCH_MAX_LENGTH)
+    page: int = Field(default=1, ge=1, le=10_000)
+    page_size: int = Field(default=DEFAULT_PAGE_SIZE, ge=1, le=MAX_PAGE_SIZE)
 
 
 class Availability(BaseModel):

@@ -9,10 +9,12 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any
 
-from sqlalchemy import ColumnElement, Select, func, select
+from sqlalchemy import ColumnElement, Select, cast, func, select
+from sqlalchemy.dialects.postgresql import REGCONFIG
 from sqlalchemy.orm import Session, aliased, selectinload
 
 from backend.app.models import Category, Product, product_categories
+from backend.app.models.catalogue import SEARCH_CONFIG
 from backend.app.schemas.products import ProductQuery, ProductSort
 
 RELATED_LIMIT = 4
@@ -108,3 +110,61 @@ def related_products(
             .options(selectinload(Product.images))
         )
     )
+
+
+# Fuzzy fallback threshold for word_similarity(query, name): low enough for one or two
+# typos in a short word, high enough to avoid unrelated names.
+FUZZY_THRESHOLD = 0.3
+
+
+def search_visible_products(
+    session: Session, q: str, *, page: int, page_size: int
+) -> ProductListResult:
+    """Full-text search; when it finds nothing, trigram similarity on the name.
+
+    ``websearch_to_tsquery`` accepts any user text (quotes, operators, Urdu) without
+    syntax errors, and ``q`` is always a bound parameter.
+    """
+    tsquery = func.websearch_to_tsquery(cast(SEARCH_CONFIG, REGCONFIG), q)
+    matches = Product.search_vector.op("@@")(tsquery)
+    exact_name = func.lower(Product.name) == q.lower()
+    result = _ranked(
+        session,
+        [Product.is_visible.is_(True), matches],
+        [exact_name.desc(), func.ts_rank_cd(Product.search_vector, tsquery).desc()],
+        page=page,
+        page_size=page_size,
+    )
+    if result.total:
+        return result
+
+    similarity = func.extensions.word_similarity(func.lower(q), func.lower(Product.name))
+    return _ranked(
+        session,
+        [Product.is_visible.is_(True), similarity >= FUZZY_THRESHOLD],
+        [similarity.desc()],
+        page=page,
+        page_size=page_size,
+    )
+
+
+def _ranked(
+    session: Session,
+    conditions: list[ColumnElement[bool]],
+    ranking: list[ColumnElement[Any]],
+    *,
+    page: int,
+    page_size: int,
+) -> ProductListResult:
+    total = session.scalar(select(func.count()).select_from(Product).where(*conditions)) or 0
+    if not total:
+        return ProductListResult(products=[], total=0)
+    products = session.scalars(
+        select(Product)
+        .where(*conditions)
+        .order_by(*ranking, func.lower(Product.name), Product.id)
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+        .options(selectinload(Product.images))
+    ).all()
+    return ProductListResult(products=products, total=total)

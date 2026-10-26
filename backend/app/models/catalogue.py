@@ -12,6 +12,7 @@ from decimal import Decimal
 from sqlalchemy import (
     CheckConstraint,
     Column,
+    Computed,
     DateTime,
     Enum,
     ForeignKey,
@@ -24,11 +25,18 @@ from sqlalchemy import (
     UniqueConstraint,
     func,
 )
+from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from backend.app.models.base import Base
 
 SLUG_MAX_LENGTH = 200
+# Full-text search text search configuration and weighted document (OR-020).
+SEARCH_CONFIG = "english"
+SEARCH_VECTOR_SQL = (
+    f"setweight(to_tsvector('{SEARCH_CONFIG}', coalesce(name, '')), 'A') || "
+    f"setweight(to_tsvector('{SEARCH_CONFIG}', coalesce(description, '')), 'B')"
+)
 
 product_categories = Table(
     "product_categories",
@@ -65,6 +73,10 @@ class Product(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
+    # Maintained by PostgreSQL from name (weight A) and description (weight B).
+    search_vector: Mapped[str | None] = mapped_column(
+        TSVECTOR, Computed(SEARCH_VECTOR_SQL, persisted=True), deferred=True
+    )
 
     images: Mapped[list["ProductImage"]] = relationship(
         back_populates="product",
@@ -77,8 +89,17 @@ class Product(Base):
     )
 
 
-# Case-insensitive name lookups; full-text search arrives in OR-E3.
+# Case-insensitive name lookups.
 Index("ix_products_name_lower", func.lower(Product.name))
+# Full-text search, and trigram matching for misspellings (pg_trgm lives in the
+# Supabase "extensions" schema).
+Index("ix_products_search_vector", Product.search_vector, postgresql_using="gin")
+Index(
+    "ix_products_name_trgm",
+    Product.name,
+    postgresql_using="gin",
+    postgresql_ops={"name": "extensions.gin_trgm_ops"},
+)
 
 
 class ProductImage(Base):

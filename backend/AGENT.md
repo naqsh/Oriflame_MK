@@ -43,7 +43,8 @@ backend/
 │   │   ├── router.py           # api_router, mounted at /api/v1 (no endpoints yet)
 │   │   └── endpoints/
 │   │       ├── categories.py   # GET /api/v1/categories (tree), /api/v1/categories/{slug}
-│   │       └── products.py     # GET /api/v1/products, /api/v1/products/{slug}; (planned) search, referral, admin
+│   │       ├── products.py     # GET /api/v1/products, /api/v1/products/{slug}
+│   │       └── search.py       # GET /api/v1/search; (planned) referral, admin
 │   ├── core/
 │   │   ├── config.py           # Settings, ReferralConfig, ConfigProvider; ALLOWED_REFERRAL_HOSTS (referral host allow-list)
 │   │   ├── logging.py          # structlog JSON + RequestContextMiddleware (X-Request-ID, request_completed)
@@ -91,7 +92,8 @@ backend/
 │   └── versions/
 │       ├── 001_baseline.py     # Empty schema; RLS on alembic_version
 │       ├── 002_catalogue_schema.py  # Catalogue tables + sync_run_status enum; RLS on each
-│       └── 003_product_source.py    # products.source (indexed; existing rows backfilled dev_fixture)
+│       ├── 003_product_source.py    # products.source (indexed; existing rows backfilled dev_fixture)
+│       └── 004_product_search.py    # generated search_vector + GIN; pg_trgm (extensions schema) name index
 └── tests/
     ├── conftest.py             # clean_env, app/client/async_client, TEST_POSTGRES_URL db fixtures
     ├── unit/                   # config, db session, slugs, catalogue schemas, sources (fixture, mocked HTTP)
@@ -231,6 +233,16 @@ Why each step is there: [`docs/learning/2026-10-idempotent-catalogue-upserts.md`
 |---|---|
 | `GET /api/v1/products` | Visible products only. `category` (slug; includes subcategories), `min_price`/`max_price` (products without a price never match), `sort` (`name_asc` default, `name_desc`, `price_asc`, `price_desc`, `newest`; unknown prices last), `page` (from 1), `page_size` (1 to 100, default 24). Returns `{items, total, page, page_size}`; a page past the end returns empty `items` with the real `total`. An unknown category returns no items |
 | `GET /api/v1/products/{slug}` | Detail with images (by position), categories, `sku`, `description`, `source_url`, `last_synced_at` and up to 4 `related` products (shared category, by name). Hidden or unknown slugs return 404 `{"detail": "Product not found"}` |
+
+### Search API (OR-020)
+
+`GET /api/v1/search?q=&page=&page_size=` returns the same `{items, total, page, page_size}` shape as the products list, visible products only.
+
+- `q` is trimmed and must be 1 to 100 characters (otherwise 422). Unknown parameters return 422.
+- **Full-text first:** `products.search_vector` is a generated column, `name` weighted A and `description` B, using the `english` configuration (stems "creams" to "cream"), with a GIN index. The query is `websearch_to_tsquery`, which accepts quotes, `OR`, `-`, punctuation and Urdu without syntax errors; `q` is always a bound parameter. Order: exact name match first, then `ts_rank_cd`, then name.
+- **Fuzzy fallback:** only when full-text finds nothing, `extensions.word_similarity(q, name) >= 0.3`, ordered by similarity, for misspellings like "peech". There is a trigram GIN index on `name` (`extensions.gin_trgm_ops`), but the fallback's function call does not use it; that is fine at fixture scale and should switch to the `%>` operator if the catalogue grows large.
+- **Rate limiting** is deferred to OR-E6, which adds one shared limiter for all public endpoints.
+- Migration `004_product_search` creates the `extensions` schema if missing (plain PostgreSQL) and `pg_trgm` in it (the Supabase convention). Its downgrade keeps the extension.
 
 ### Categories API (OR-019)
 
