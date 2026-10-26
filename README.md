@@ -4,7 +4,7 @@ An independent, single-vendor product discovery and referral storefront for Orif
 
 > **Disclaimer:** This is an independent referral storefront, **not** the official Oriflame website. It is not affiliated with or endorsed by Oriflame unless explicitly authorised. Checkout, payment, and fulfilment happen on Oriflame's official platform.
 
-**Status:** MVP 1 (project scaffold) and MVP 2 (catalogue data) are complete. The backend has the catalogue schema, an idempotent sync with run records, and a `sync` command. It uses **development fixtures only**, because no permitted Oriflame data source is confirmed yet ([ADR-001](docs/adr/ADR-001-catalogue-data-source.md)). There are no storefront pages, referral or admin features yet. See [`docs/PLAN.md`](docs/PLAN.md).  
+**Status:** MVP 1 (project scaffold), MVP 2 (catalogue data) and MVP 3 (storefront) are complete. The backend has the catalogue schema, an idempotent sync with run records, and a `sync` command. It uses **development fixtures only**, because no permitted Oriflame data source is confirmed yet ([ADR-001](docs/adr/ADR-001-catalogue-data-source.md)). MVP 3 (storefront) adds the homepage, product listing and category pages with filters, product pages, search and a browser-only shopping list. There are no referral handoff or admin features yet. See [`docs/PLAN.md`](docs/PLAN.md).  
 **Repository:** [github.com/naqsh/Oriflame_MK](https://github.com/naqsh/Oriflame_MK)  
 **Version:** 0.1.0 | October 2026
 

@@ -164,6 +164,20 @@ All of these are Server Components; none needs `"use client"`.
 
 Required pages: homepage, product listing and category pages, product detail page, search results, referral/how-to-buy page, about and contact pages, privacy policy, terms, and cookie information as applicable.
 
+| Page | Route | Status |
+|---|---|---|
+| Homepage | `/` | ✅ OR-023 |
+| Product listing | `/products` | ✅ OR-024 |
+| Category | `/categories/[slug]` | ✅ OR-024 |
+| Product detail | `/products/[slug]` | ✅ OR-025 |
+| Search results | `/search` | ✅ OR-026 |
+| Shopping list | `/list` | ✅ OR-027 |
+| Not found | (any unknown route) | ✅ OR-024 |
+| Referral / how to buy | `/referral` | ⬜ OR-E4 (linked from the homepage already) |
+| About, contact, privacy, terms, cookies | | ⬜ OR-E5 |
+
+Deviations from these specs, with reasons, are recorded in [ADR-007](../docs/adr/ADR-007-storefront-rendering.md).
+
 ### Product Detail Page
 
 Show, where available:

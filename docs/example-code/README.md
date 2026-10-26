@@ -34,7 +34,7 @@ As the codebase develops, add examples for:
 
 ### Backend (Python)
 
-- [ ] `api-endpoint-pattern.py` — Paginated, typed FastAPI endpoint
+- [x] `api-endpoint-pattern.py` — Paginated, typed FastAPI endpoint (OR-028; condensed from the products API)
 - [ ] `settings-pattern.py` — Pydantic Settings behind a `ConfigProvider`
 - [ ] `referral-service-pattern.py` — Server-side referral resolution + validation
 - [x] `upsert-pattern.py` — Idempotent upsert keyed on source id (OR-017; condensed from `backend/app/repositories/products.py`)
@@ -42,9 +42,9 @@ As the codebase develops, add examples for:
 
 ### Frontend (TypeScript)
 
-- [ ] `component-pattern.tsx` — Server Component fetching via `lib/api`
+- [x] `component-pattern.tsx` — Server Component fetching via `lib/api` inside Suspense (OR-028)
 - [ ] `client-component-pattern.tsx` — Minimal interactive Client Component
-- [ ] `zod-schema-pattern.ts` — Zod validation for API responses
+- [x] `zod-schema-pattern.ts` — Zod validation for API responses (OR-028)
 - [ ] `jsonld-pattern.ts` — JSON-LD builder (verified `Offer` only)
 
 ### Testing

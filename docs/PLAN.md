@@ -75,7 +75,7 @@ Fresh autonomous kickoff only (not every "hi"): then read `docs/KICKOFF-PROMPT.m
 
 ---
 
-## MVP 3: Storefront 🔄
+## MVP 3: Storefront ✅
 
 **Epic:** OR-E3  
 **Branch:** `epic/E3-storefront`  
@@ -93,7 +93,7 @@ Fresh autonomous kickoff only (not every "hi"): then read `docs/KICKOFF-PROMPT.m
 | OR-025 | Product detail page | Frontend | M | OR-022, OR-021 | ✅ | Coding |
 | OR-026 | Search results page | Frontend | S | OR-020, OR-022 | ✅ | Coding |
 | OR-027 | Local shopping list | Frontend | M | OR-025 | ✅ | Coding |
-| OR-028 | Documentation sync for storefront | Docs | S | OR-018–OR-027 | ⬜ | Docs |
+| OR-028 | Documentation sync for storefront | Docs | S | OR-018–OR-027 | ✅ | Docs |
 
 ---
 

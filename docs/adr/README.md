@@ -80,6 +80,7 @@ What is the change that we're proposing and/or doing?
 |---|---|---|---|
 | [ADR-001](ADR-001-catalogue-data-source.md) | Catalogue data source (fixtures until a permitted source is confirmed) | Proposed | 2026-10-26 |
 | [ADR-005](ADR-005-configuration-provider-seam.md) | Configuration provider seam | Accepted | 2026-10-26 |
+| [ADR-007](ADR-007-storefront-rendering.md) | Storefront rendering under Cache Components (request-time data, soft 404 until OR-E5) | Accepted | 2026-10-27 |
 | [ADR-006](ADR-006-scaffold-toolchain-choices.md) | Scaffold toolchain choices (MVP 1) | Accepted | 2026-10-26 |
 
 ---
