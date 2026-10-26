@@ -8,7 +8,7 @@
 
 | Date | Mistake Pattern | Root Cause | Rule to Prevent Recurrence |
 |---|---|---|---|
-| — | — | — | — |
+| 2026-10-26 | `uv run mypy` fails with "An Application Control policy has blocked this file" | Windows Application Control blocks the `mypy.exe` launcher in `.venv/Scripts` | On this machine run `uv run python -m mypy backend` (the same applies to any blocked tool launcher) |
 
 ---
 
