@@ -29,7 +29,7 @@ Use compatible stable releases and **record the pinned versions here** when MVP 
 
 | Package | Version | Notes |
 |---|---|---|
-| Python | 3.12+ | Managed by `uv` |
+| Python | 3.14 (`.python-version`; requires >=3.12) | Managed by `uv`; CI uses the same pin |
 | FastAPI | 0.162.0 (Starlette 1.10.0, uvicorn 0.54.0) | App factory: `backend.app.main:create_app` |
 | Pydantic / pydantic-settings | pydantic 2.14.1 / pydantic-settings 2.16.1 | mypy runs the `pydantic.mypy` plugin |
 | SQLAlchemy | 2.1.6 | Typed declarative models |
@@ -39,6 +39,7 @@ Use compatible stable releases and **record the pinned versions here** when MVP 
 | structlog | 26.1.0 | JSON to stdout, `format_exc_info` (no locals in tracebacks) |
 | pytest / pytest-cov | pytest 9.1.1 / pytest-cov 7.1.0 (coverage 7.17.0, fail_under 80) | pytest-asyncio 1.4.1 (auto mode), pytest-socket 0.8.1 (localhost only); `db` marker needs TEST_POSTGRES_URL |
 | ruff / mypy | ruff 0.17.2 / mypy 2.4.0 | Run mypy as `uv run python -m mypy` on Windows (see lessons) |
+| pip-audit | 2.10.1 | CI dependency audit; on this Windows setup run `uv run python -m pip_audit --skip-editable` |
 
 ### Frontend (TypeScript)
 

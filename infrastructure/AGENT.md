@@ -53,7 +53,9 @@ git checkout -b main origin/main   # brings in LICENSE; local untracked docs are
 
 | Workflow | Trigger | Purpose |
 |---|---|---|
-| `.github/workflows/ci.yml` | PR + push to integration | Ruff, mypy, pytest (PostgreSQL service container via `TEST_POSTGRES_URL` + Alembic upgrade — never the Supabase project), pip-audit; ESLint, tsc, Vitest, Next.js build, npm audit; Playwright (where practical) |
+| `.github/workflows/ci.yml` | Every PR, push to `epic/autonomus-implementation`, manual run | **backend**: `uv sync --locked`, ruff check + format check, mypy, `alembic upgrade head` on a fresh `postgres:17` service DB, pytest with coverage on a separate `oriflame_test` DB, pip-audit. **frontend**: `npm ci`, lint, typecheck, Vitest with coverage, build, `npm audit --omit=dev --audit-level=high`. **e2e** (after both): Playwright smoke; report uploaded on failure |
+
+Actions are pinned to release commit SHAs (a tag comment shows the version); update them deliberately. The workflow has `contents: read` permission only and uses no secrets: database URLs are throwaway CI service credentials, and referral values are empty placeholders.
 
 CI never uses real consultant codes or live Oriflame endpoints — use placeholder env values and mocked sources.
 
