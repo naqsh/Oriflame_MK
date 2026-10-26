@@ -203,6 +203,8 @@ Use unique constraints, foreign keys, and indexes for product slug, SKU/source I
 
 Run counts are product outcomes. `error_detail` lists up to 50 lines (then "... and N more", capped at 4000 characters) and never contains input values, query strings or driver messages. Unknown category or parent references are noted there without counting as errors. Events: `catalogue_sync_started`, `catalogue_sync_finished`, `catalogue_sync_failed`, `catalogue_products_hidden`. A sync never sets `is_visible` back to true, so a product hidden earlier (by a sync or an admin) stays hidden when it reappears until OR-E6 provides an admin control.
 
+Why each step is there: [`docs/learning/2026-10-idempotent-catalogue-upserts.md`](../docs/learning/2026-10-idempotent-catalogue-upserts.md); condensed example: [`docs/example-code/upsert-pattern.py`](../docs/example-code/upsert-pattern.py).
+
 **Slugs** (`services/slugs.py`): `slugify(name)`; when another source row already holds it, append `-{slugify(source_id)}`. Source ids are unique, so the result does not depend on sync order. A numeric suffix is a last resort. Truncated to 200 characters with the suffix kept. Avoid storing customer personal data unless a feature genuinely requires it.
 
 ---

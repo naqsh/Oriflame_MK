@@ -56,7 +56,7 @@ Fresh autonomous kickoff only (not every "hi"): then read `docs/KICKOFF-PROMPT.m
 
 ---
 
-## MVP 2: Catalogue Data 🔄
+## MVP 2: Catalogue Data ✅
 
 **Epic:** OR-E2  
 **Branch:** `epic/E2-catalogue-data`  
@@ -71,7 +71,7 @@ Fresh autonomous kickoff only (not every "hi"): then read `docs/KICKOFF-PROMPT.m
 | OR-014 | Catalogue sync service with run recording and safe retries | Backend | M | OR-012, OR-013 | ✅ | Coding |
 | OR-015 | Explicitly named development fixtures | Backend / Fixtures | S | OR-013 | ✅ | Coding |
 | OR-016 | Catalogue sync command-line entry point | Backend / Ops | S | OR-014, OR-015 | ✅ | Coding |
-| OR-017 | Documentation sync for catalogue data | Docs | S | OR-010–OR-016 | ⬜ | Docs |
+| OR-017 | Documentation sync for catalogue data | Docs | S | OR-010–OR-016 | ✅ | Docs |
 
 ---
 

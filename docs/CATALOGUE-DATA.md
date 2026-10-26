@@ -24,6 +24,16 @@ Record the chosen source, its terms, and image/content usage rights in an ADR (`
 
 ---
 
+## Current State (MVP 2)
+
+- **Only development fixtures are in use.** ADR-001 is Proposed: no permitted source, terms or image rights are confirmed. Nothing is read from Oriflame's website.
+- **Fixture file:** `backend/fixtures/dev_catalogue_sample.json`, loaded with `uv run python -m backend.app.cli sync --fixtures`. Rows are stored with `products.source = 'dev_fixture'`.
+- **Sync cadence:** manual only, through the CLI (OR-016); an admin trigger follows in OR-E6. A schedule is decided when a real source is accepted.
+- **Removal policy:** a product the source stops listing is hidden (`is_visible = false`), never deleted, and only within the same source. A sync never makes a hidden product visible again; that needs the admin control planned for OR-E6.
+- **Tables:** `products`, `product_images`, `categories`, `product_categories`, `catalogue_sync_runs`. No variant or availability tables: no source provides them, so availability is always "not confirmed".
+
+---
+
 ## Source Selection
 
 `CATALOGUE_SOURCE` picks the adapter in `backend/app/integrations/oriflame/`. Today only `fixture` exists (ADR-001). An accepted source gets its own adapter behind the `CatalogueSource` Protocol and uses `FeedHttpClient`, which enforces timeouts, bounded retries, Retry-After limits and an immediate stop on 401/403.
