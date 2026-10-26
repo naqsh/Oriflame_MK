@@ -35,14 +35,15 @@ frontend/
 │   ├── layout.tsx              # Root layout: html lang, SiteShell, title template + description
 │   ├── page.tsx                # Homepage: static hero + how-it-works, HomeCatalogue streamed per request
 │   ├── products/page.tsx       # All products: static h1, ProductsResults streamed (filters, sort, pages)
+│   ├── products/[slug]/page.tsx    # Product detail: ProductDetailContent streamed
 │   ├── categories/[slug]/page.tsx  # CategoryContent streamed: breadcrumb, h1, subcategories, listing
 │   ├── not-found.tsx           # Root 404 UI (links home and to all products)
 │   ├── status/page.tsx         # Backend status (noindex), request-time BackendStatus
 │   ├── globals.css             # Tailwind 4 + shadcn theme tokens
-│   └── (planned) products/[slug]/, search/, referral/, about/, contact/,
+│   └── (planned) search/, referral/, about/, contact/,
 │       privacy/, terms/, admin/, sitemap.ts, robots.ts (JSON-LD in layout: OR-E5)
 ├── components/
-│   ├── catalogue/              # products-results, category-content (page bodies, testable)
+│   ├── catalogue/              # products-results, category-content, product-detail (page bodies, testable)
 │   ├── filters/                # filter-panel, sort-select (Client), pagination, product-listing
 │   ├── home/                   # home-catalogue (featured or latest products, categories), how-it-works
 │   ├── layout/                 # site-header (search + category nav), site-footer (disclaimer), site-shell,
@@ -56,6 +57,7 @@ frontend/
 │   │                           # getCategories, getCategory, searchProducts), schemas/{catalogue,health}.ts
 │   ├── categories.ts           # categoryOptions: flatten the tree for a <select>
 │   ├── images.ts               # AUTHORISED_IMAGE_HOSTS (empty, ADR-001), authorisedImageSrc
+│   ├── text.ts                 # toParagraphs: source text/HTML to plain paragraphs (never raw HTML)
 │   ├── listing.ts              # parseListingParams (normalise URL state), listingHref, SORT_OPTIONS
 │   ├── seo/                    # site.ts (name, description, disclaimer); (planned) metadata/JSON-LD builders
 │   └── utils/                  # cn.ts (shadcn class helper)
@@ -85,6 +87,16 @@ Adjust structure when useful, but keep modules cohesive and avoid oversized file
 | `CategoryNav` | Request-time (`connection()`) inside `Suspense` in the header; top-level categories with products; omitted, with a log line, if the API fails. Because of it every route is a Partial Prerender (`◐`) |
 
 All of these are Server Components; none needs `"use client"`.
+
+### Product detail page (OR-025)
+
+- **Only sourced data:** name, SKU, price, availability, images, description, categories and related products, as the API returns them. Sections with no data are left out entirely (no empty headings). Variants and ingredients are not shown because no source provides them (ADR-001), and no claims are added.
+- **Description:** `lib/text.ts` turns source text or HTML into plain paragraphs. Tags, scripts, styles and attributes are dropped and common entities decoded, and React renders the result as text, so source HTML is never rendered raw.
+- **Images:** a gallery of authorised images (first large, the rest as thumbnails), or the neutral "No image available for …" placeholder.
+- **Source link:** for real data, "View this product on {host}" with `target="_blank"` and `rel="noopener noreferrer"`. Development fixtures have no official page, and the page says so instead of linking.
+- **Honesty notes:** "Checkout and fulfilment happen on Oriflame's official platform", and the date the details were last updated from the source.
+- **Reserved slots:** empty `data-slot="referral-handoff"` (OR-E4 "Buy from Oriflame") and `data-slot="add-to-list"` (OR-027).
+- **No `generateStaticParams` yet:** it runs during `next build`, which has no backend (same reason as the homepage). Pages render per request; add static params with revalidation alongside OR-052. Hidden or unknown slugs call `notFound()` (soft 404 with `noindex`, as for categories).
 
 ### Product listing and category pages (OR-024)
 

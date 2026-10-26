@@ -25,6 +25,12 @@ export function productSummary(overrides: Partial<ProductSummary> = {}): Product
 export function productDetailPayload(): Record<string, unknown> {
   return {
     ...productSummary(),
+    // The backend uses the detail-context label on product pages (OR-021).
+    availability: {
+      status: "not_confirmed",
+      label: "Check availability at Oriflame",
+      checked_at: null,
+    },
     sku: "DEV-0001",
     description: "Placeholder description.",
     images: [productSummary().primary_image],
