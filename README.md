@@ -73,7 +73,7 @@ Full instructions: [`docs/guidence/try-it-locally.md`](docs/guidence/try-it-loca
 cp .env.example .env          # set POSTGRES_URL (Supabase) and referral values
 uv sync                       # backend dependencies
 uv run alembic upgrade head   # apply migrations to the Supabase database
-uv run uvicorn backend.app.main:app --reload
+uv run uvicorn backend.app.main:create_app --factory --reload
 cd frontend && npm install && npm run dev
 ```
 

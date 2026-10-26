@@ -37,7 +37,10 @@ Keep a clear separation between FastAPI routers, schemas, services, repositories
 backend/
 ├── AGENT.md                    # This file
 ├── app/
+│   ├── api/
+│   │   └── health.py           # GET /health, GET /health/ready (root, not versioned)
 │   ├── api/v1/
+│   │   ├── router.py           # api_router, mounted at /api/v1
 │   │   └── endpoints/
 │   │       ├── products.py     # Listing, detail (paginated)
 │   │       ├── categories.py   # Category tree / category products
@@ -47,10 +50,10 @@ backend/
 │   │       └── admin.py        # Protected admin endpoints
 │   ├── core/
 │   │   ├── config.py           # Pydantic Settings + config-provider interface
-│   │   ├── logging.py          # structlog configuration
-│   │   └── security.py         # Admin auth, headers, rate limits
+│   │   ├── logging.py          # structlog JSON + RequestContextMiddleware (X-Request-ID, request_completed)
+│   │   └── security.py         # Admin auth, headers, rate limits (not created yet: OR-E6)
 │   ├── db/
-│   │   └── session.py          # SQLAlchemy engine/session
+│   │   └── session.py          # SQLAlchemy engine (OR-003); session + get_db (OR-004)
 │   ├── models/                 # SQLAlchemy models
 │   ├── schemas/                # Pydantic request/response models
 │   ├── repositories/           # DB access (no business logic)
@@ -62,7 +65,7 @@ backend/
 │   │   └── oriflame/
 │   │       ├── client.py       # Permitted-source client (timeouts, retries)
 │   │       └── catalogue.py    # Sync: idempotent upserts + sync-run records
-│   └── main.py                 # FastAPI application entry point
+│   └── main.py                 # create_app() factory, CORS, 500 handler
 ├── alembic/                    # Migrations
 └── tests/
     ├── conftest.py

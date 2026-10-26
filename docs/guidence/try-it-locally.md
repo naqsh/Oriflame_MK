@@ -57,10 +57,10 @@ For tests, point `TEST_POSTGRES_URL` at a local PostgreSQL (e.g. `supabase start
 ```bash
 uv sync
 uv run alembic upgrade head
-uv run uvicorn backend.app.main:app --reload
+uv run uvicorn backend.app.main:create_app --factory --reload
 ```
 
-API at `http://localhost:8000`; health at `/health`.
+API at `http://localhost:8000`; liveness at `/health`, readiness (database check) at `/health/ready`, interactive docs at `/docs` (disabled when `APP_ENV=production`).
 
 ---
 
