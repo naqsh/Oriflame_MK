@@ -72,6 +72,7 @@ backend/
 │   │       ├── client.py       # CatalogueSource Protocol, SourceError family, InvalidRecord, parse_records
 │   │       ├── fixtures.py     # FixtureCatalogueSource (dev_fixture; strict; refuses APP_ENV=production)
 │   │       └── http.py         # FeedHttpClient: timeouts, bounded retries, Retry-After, no auth bypass
+│   ├── cli.py                  # python -m backend.app.cli sync [--fixtures] [--force-dev]
 │   └── main.py                 # create_app() factory, CORS, 500 handler
 ├── fixtures/
 │   └── dev_catalogue_sample.json  # Development-only placeholder catalogue (OR-015)
@@ -85,7 +86,7 @@ backend/
 └── tests/
     ├── conftest.py             # clean_env, app/client/async_client, TEST_POSTGRES_URL db fixtures
     ├── unit/                   # config, db session, slugs, catalogue schemas, sources (fixture, mocked HTTP)
-    ├── integration/            # health, request context, migrations, catalogue schema, repositories, sync (db)
+    ├── integration/            # health, request context, migrations, catalogue schema, repositories, sync, CLI (db)
     └── security/               # CORS, outbound network blocked
 ```
 

@@ -42,6 +42,18 @@
 
 ---
 
+## Catalogue Sync
+
+Run the sync as a one-off process with the production environment (it is not part of the web server):
+
+```bash
+uv run python -m backend.app.cli sync
+```
+
+It prints the run id, status and counts, and exits `0` on success or partial, `1` on failure, `3` if a sync is already running and `4` if products from another source exist. Every run is recorded in `catalogue_sync_runs`. **Today this cannot import anything in production:** the only source is development fixtures, which refuse `APP_ENV=production` (`--fixtures` exits `2`). It becomes useful once ADR-001 accepts a permitted source. An admin trigger follows in OR-E6.
+
+---
+
 ## Rollback
 
 1. Redeploy the previous backend/frontend release.
