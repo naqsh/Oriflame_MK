@@ -33,11 +33,24 @@ def test_upgrade_head_on_empty_database(migration_config: Config, migrated_engin
 
     with migrated_engine.connect() as connection:
         version = connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
-    assert version == "001_baseline"
+    assert version == "002_catalogue_schema"
 
 
 def test_downgrade_base_then_upgrade_head(migration_config: Config) -> None:
     command.downgrade(migration_config, "base")
+    command.upgrade(migration_config, "head")
+
+
+def test_downgrade_one_then_upgrade_head(migration_config: Config, migrated_engine: Engine) -> None:
+    command.downgrade(migration_config, "-1")
+    with migrated_engine.connect() as connection:
+        leftover = connection.execute(
+            text(
+                "SELECT count(*) FROM pg_type WHERE typname = 'sync_run_status' "
+                "OR typname IN ('products', 'categories')"
+            )
+        ).scalar_one()
+    assert leftover == 0  # tables and the enum type are gone
     command.upgrade(migration_config, "head")
 
 

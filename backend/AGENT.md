@@ -49,13 +49,16 @@ backend/
 │   ├── db/
 │   │   └── session.py          # Engine, session factory, get_db, URL-free connection errors
 │   ├── models/
-│   │   └── base.py             # DeclarativeBase + constraint naming convention
+│   │   ├── __init__.py         # Imports every model so Base.metadata is complete for Alembic
+│   │   ├── base.py             # DeclarativeBase + constraint naming convention
+│   │   └── catalogue.py        # Product, ProductImage, Category, product_categories, CatalogueSyncRun
 │   ├── schemas/
 │   │   ├── errors.py           # ErrorResponse
 │   │   └── health.py           # HealthResponse, ReadinessResponse
 │   ├── repositories/           # (planned) DB access, no business logic
 │   ├── services/
-│   │   └── health.py           # ReadinessService (SELECT 1); (planned) products, availability, referral (ReferralService)
+│   │   ├── health.py           # ReadinessService (SELECT 1); (planned) products, availability, referral (ReferralService)
+│   │   └── slugs.py            # slugify + deterministic collision suffix (source id)
 │   ├── integrations/
 │   │   └── oriflame/           # (planned, OR-E2) permitted-source client + idempotent catalogue sync
 │   └── main.py                 # create_app() factory, CORS, 500 handler
@@ -63,11 +66,12 @@ backend/
 │   ├── env.py                  # URL from Settings, skips Supabase-managed schemas, URL-free errors
 │   ├── script.py.mako          # Migration template (RLS reminder)
 │   └── versions/
-│       └── 001_baseline.py     # Empty schema; RLS on alembic_version
+│       ├── 001_baseline.py     # Empty schema; RLS on alembic_version
+│       └── 002_catalogue_schema.py  # Catalogue tables + sync_run_status enum; RLS on each
 └── tests/
     ├── conftest.py             # clean_env, app/client/async_client, TEST_POSTGRES_URL db fixtures
-    ├── unit/                   # config, db session
-    ├── integration/            # health, request context, migrations (db)
+    ├── unit/                   # config, db session, slugs
+    ├── integration/            # health, request context, migrations, catalogue schema (db)
     └── security/               # CORS, outbound network blocked
 ```
 
@@ -157,17 +161,20 @@ Supabase PostgreSQL + Alembic. Every table in `public` gets `ENABLE ROW LEVEL SE
 
 | Table | Notes |
 |---|---|
-| `products` | Stable source id, SKU, slug (unique), name, description, price (PKR), source URL, last-synced timestamp, visibility/featured flags |
-| `product_images` | FK → products; authorised assets only; alt text |
-| `categories` | Slug (unique), parent FK |
-| `product_variants` | Only if the source requires variants |
-| `product_availability` | Only when meaningful source data exists |
-| `catalogue_sync_runs` | Started/finished, status, counts, error detail |
+| `products` ✅ | `source_id` (unique), `sku` (indexed), `slug` (unique), name (`lower(name)` index), description, `price_pkr` (nullable, `> 0` when present; never 0 or guessed), `currency` (PKR only), `source_url`, `last_synced_at`, `is_visible`, `is_featured`, timestamps |
+| `product_images` ✅ | FK → products, `ON DELETE CASCADE`; authorised assets only (empty while ADR-001 is Proposed); alt text; position unique per product |
+| `categories` ✅ | `source_id` and `slug` unique; `parent_id` self-FK, `ON DELETE SET NULL` |
+| `product_categories` ✅ | Composite PK; both FKs cascade, so deleting a product removes its memberships but never a shared category; `category_id` indexed |
+| `product_variants` | **Omitted** (OR-011): ADR-001 confirms no source that provides variants |
+| `product_availability` | **Omitted** (OR-011): no source data; the storefront labels availability "not confirmed" |
+| `catalogue_sync_runs` ✅ | `source`, `started_at`/`finished_at`, `status` (enum `sync_run_status`: running, success, failed, partial), created/updated/unchanged/error counts, `error_detail` |
 | `admin_users` | If admin authentication is implemented |
 | `audit_logs` | Meaningful admin actions |
 | `referral_clicks` | Basic click analytics (no personal data) |
 
-Use unique constraints, foreign keys, and indexes for product slug, SKU/source ID, category, and searchable fields. Avoid storing customer personal data unless a feature genuinely requires it.
+Use unique constraints, foreign keys, and indexes for product slug, SKU/source ID, category, and searchable fields. ✅ = created by `002_catalogue_schema`.
+
+**Slugs** (`services/slugs.py`): `slugify(name)`; when another source row already holds it, append `-{slugify(source_id)}`. Source ids are unique, so the result does not depend on sync order. A numeric suffix is a last resort. Truncated to 200 characters with the suffix kept. Avoid storing customer personal data unless a feature genuinely requires it.
 
 ---
 

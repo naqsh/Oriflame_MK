@@ -39,7 +39,7 @@ Technical accessibility is **not** permission. robots.txt governs crawling, not 
 
 ### Fields the schema must support
 
-So that a permitted source can be plugged in later without schema changes, OR-011 models these fields. Each is optional unless marked:
+OR-011 models these fields so a permitted source can plug in later. Variants and availability would need a new migration when a source provides them. Each field is optional unless marked:
 
 | Field | Notes |
 |---|---|
@@ -50,8 +50,8 @@ So that a permitted source can be plugged in later without schema changes, OR-01
 | Price (PKR) | Optional; never shown as verified without a confirmed source |
 | Images | Optional; empty while ADR-001 is Proposed |
 | Categories | Optional, many-to-many |
-| Variants (shade, size) | Optional |
-| Availability | Optional; defaults to "not confirmed" |
+| Variants (shade, size) | Not modelled until a source provides them (OR-011 omitted the table) |
+| Availability | Not modelled until a source provides it; the storefront shows "not confirmed" |
 | `source_url`, `last_synced_at` | **Required** provenance on every imported product |
 
 Ratings and reviews are **not** modelled.

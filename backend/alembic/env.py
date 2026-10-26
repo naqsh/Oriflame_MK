@@ -14,7 +14,7 @@ from sqlalchemy.exc import OperationalError
 
 from backend.app.core.config import ConfigurationError, Settings, load_settings
 from backend.app.db.session import CONNECT_TIMEOUT_SECONDS, describe_connection_error
-from backend.app.models.base import Base
+from backend.app.models import Base
 
 # Schemas Supabase manages; autogenerate must never try to create or drop them.
 SUPABASE_MANAGED_SCHEMAS = frozenset(

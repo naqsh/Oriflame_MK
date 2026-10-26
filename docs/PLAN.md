@@ -65,7 +65,7 @@ Fresh autonomous kickoff only (not every "hi"): then read `docs/KICKOFF-PROMPT.m
 | Task ID | Summary | Area | Effort | Depends on | Status | Agent |
 |---|---|---|---|---|---|---|
 | OR-010 | Investigate permitted catalogue sources and record ADR-001 | Docs / Research | M | OR-E1 | ✅ | Coding |
-| OR-011 | Catalogue schema models and migration | Backend / Database | M | OR-004, OR-010 | ⬜ | Coding |
+| OR-011 | Catalogue schema models and migration | Backend / Database | M | OR-004, OR-010 | ✅ | Coding |
 | OR-012 | Catalogue repositories with idempotent upserts | Backend | M | OR-011 | ⬜ | Coding |
 | OR-013 | Replaceable Oriflame source adapter | Backend / Integration | M | OR-010, OR-002 | ⬜ | Coding |
 | OR-014 | Catalogue sync service with run recording and safe retries | Backend | M | OR-012, OR-013 | ⬜ | Coding |
