@@ -42,7 +42,8 @@ backend/
 │   ├── api/v1/
 │   │   ├── router.py           # api_router, mounted at /api/v1 (no endpoints yet)
 │   │   └── endpoints/
-│   │       └── products.py     # GET /api/v1/products, /api/v1/products/{slug}; (planned) categories, search, referral, admin
+│   │       ├── categories.py   # GET /api/v1/categories (tree), /api/v1/categories/{slug}
+│   │       └── products.py     # GET /api/v1/products, /api/v1/products/{slug}; (planned) search, referral, admin
 │   ├── core/
 │   │   ├── config.py           # Settings, ReferralConfig, ConfigProvider; ALLOWED_REFERRAL_HOSTS (referral host allow-list)
 │   │   ├── logging.py          # structlog JSON + RequestContextMiddleware (X-Request-ID, request_completed)
@@ -55,10 +56,12 @@ backend/
 │   │   └── catalogue.py        # Product, ProductImage, Category, product_categories, CatalogueSyncRun
 │   ├── schemas/
 │   │   ├── catalogue.py        # ProductRecord, ImageRecord, CategoryRecord (validated sync input)
+│   │   ├── categories.py       # CategoryTree, CategoryNode, CategoryDetail (ancestors, children)
 │   │   ├── products.py         # ProductQuery, ProductPage, ProductSummary, ProductDetail, Availability
 │   │   ├── errors.py           # ErrorResponse
 │   │   └── health.py           # HealthResponse, ReadinessResponse
 │   ├── repositories/           # DB access only, no HTTP or business logic
+│   │   ├── category_reads.py   # all_categories, visible_product_ids_by_category
 │   │   ├── categories.py       # upsert_categories (two-pass parents), category_ids_by_source
 │   │   ├── outcomes.py         # UpsertOutcome (created/updated/unchanged), WAS_INSERTED
 │   │   ├── product_reads.py    # Visible-only listing (filters, sorts, descendant categories), detail, related
@@ -66,6 +69,7 @@ backend/
 │   │   ├── slugs.py            # new_slug: collision check against the database
 │   │   └── sync_runs.py        # start/finish/fail_stale_runs, catalogue_sync_lock (advisory lock)
 │   ├── services/
+│   │   ├── categories.py       # CategoryService: tree, detail, break_cycles
 │   │   ├── availability.py     # availability_for: not_confirmed until a source provides availability (OR-021 completes)
 │   │   ├── health.py           # ReadinessService (SELECT 1); (planned) referral (ReferralService)
 │   │   ├── products.py         # ProductService: list/get, ProductNotFoundError
@@ -227,6 +231,15 @@ Why each step is there: [`docs/learning/2026-10-idempotent-catalogue-upserts.md`
 |---|---|
 | `GET /api/v1/products` | Visible products only. `category` (slug; includes subcategories), `min_price`/`max_price` (products without a price never match), `sort` (`name_asc` default, `name_desc`, `price_asc`, `price_desc`, `newest`; unknown prices last), `page` (from 1), `page_size` (1 to 100, default 24). Returns `{items, total, page, page_size}`; a page past the end returns empty `items` with the real `total`. An unknown category returns no items |
 | `GET /api/v1/products/{slug}` | Detail with images (by position), categories, `sku`, `description`, `source_url`, `last_synced_at` and up to 4 `related` products (shared category, by name). Hidden or unknown slugs return 404 `{"detail": "Product not found"}` |
+
+### Categories API (OR-019)
+
+| Endpoint | Behaviour |
+|---|---|
+| `GET /api/v1/categories` | The whole tree: `{items: [{slug, name, product_count, children}]}`, siblings by name. Empty categories are included with count 0 (the frontend may hide them) |
+| `GET /api/v1/categories/{slug}` | `{slug, name, product_count, ancestors, children}`. `ancestors` runs from the root to the direct parent (for breadcrumbs). Unknown slug: 404 `{"detail": "Category not found"}`; invalid slug: 422 |
+
+`product_count` is the number of distinct visible products in the category and all its subcategories, the same set `GET /api/v1/products?category={slug}` returns. Cyclic parent links from a source are broken in memory at the lowest id in each cycle and logged as `category_cycle_detected`; the stored data is not changed.
 
 Every product carries `price_pkr` (a decimal string, or `null` for "Price not available"), `availability` (`not_confirmed` with "Availability not confirmed" in lists and "Check availability at Oriflame" on detail) and `data_source` / `is_development_data`, so the UI can flag fixture data.
 - Admin endpoints depend on an authentication + authorisation dependency — never publicly accessible.

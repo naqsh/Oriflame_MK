@@ -84,7 +84,7 @@ Fresh autonomous kickoff only (not every "hi"): then read `docs/KICKOFF-PROMPT.m
 | Task ID | Summary | Area | Effort | Depends on | Status | Agent |
 |---|---|---|---|---|---|---|
 | OR-018 | Products API: listing with filter/sort/pagination and product detail | Backend | M | OR-E2 | ✅ | Coding |
-| OR-019 | Categories API | Backend | S | OR-018 | ⬜ | Coding |
+| OR-019 | Categories API | Backend | S | OR-018 | ✅ | Coding |
 | OR-020 | Search API with PostgreSQL full-text search | Backend / Database | M | OR-018 | ⬜ | Coding |
 | OR-021 | Availability service and honest labels | Backend | S | OR-018 | ⬜ | Coding |
 | OR-022 | Frontend catalogue schemas and product components | Frontend | M | OR-018, OR-019, OR-021 | ⬜ | Coding |
