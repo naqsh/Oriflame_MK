@@ -24,6 +24,19 @@ describe("SiteShell", () => {
     expect(home).toHaveAttribute("href", "/");
   });
 
+  it("has a search form that sends q to /search", () => {
+    render(<SiteShell>content</SiteShell>);
+
+    const form = within(screen.getByRole("banner")).getByRole("search");
+    expect(form).toHaveAttribute("action", "/search");
+    expect(form).toHaveAttribute("method", "get");
+    const input = within(form).getByRole("searchbox", { name: "Search products" });
+    expect(input).toHaveAttribute("name", "q");
+    expect(input).toHaveAttribute("maxLength", "100");
+    expect(input).toBeRequired();
+    expect(within(form).getByRole("button", { name: "Search" })).toBeInTheDocument();
+  });
+
   it("shows the independent-storefront disclaimer in the footer", () => {
     render(<SiteShell>content</SiteShell>);
 

@@ -39,17 +39,22 @@ frontend/
 │   └── (planned) products/, categories/[slug]/, search/, referral/, about/, contact/,
 │       privacy/, terms/, admin/, sitemap.ts, robots.ts (JSON-LD in layout: OR-E5)
 ├── components/
-│   ├── layout/                 # site-header, site-footer (disclaimer), site-shell (landmarks)
+│   ├── layout/                 # site-header (search + category nav), site-footer (disclaimer), site-shell,
+│   │                           # category-nav (request-time, omitted if the API fails), dev-data-banner
+│   ├── product/                # price, availability-badge, product-image, product-card, product-grid
+│   ├── search/                 # search-box (GET form to /search, no JS)
 │   ├── status/                 # backend-status (Server Component)
-│   └── product/, search/, filters/, referral/, ui/   # (planned; empty, .gitkeep)
+│   └── filters/, referral/, ui/   # (planned; empty, .gitkeep)
 ├── lib/
-│   ├── api/                    # client.ts (fetchJson, ApiError), schemas/health.ts, health.ts
+│   ├── api/                    # client.ts (fetchJson, ApiError), catalogue.ts (getProducts, getProduct,
+│   │                           # getCategories, getCategory, searchProducts), schemas/{catalogue,health}.ts
+│   ├── images.ts               # AUTHORISED_IMAGE_HOSTS (empty, ADR-001), authorisedImageSrc
 │   ├── seo/                    # site.ts (name, description, disclaimer); (planned) metadata/JSON-LD builders
 │   └── utils/                  # cn.ts (shadcn class helper)
 ├── types/                      # (planned; empty, .gitkeep)
 ├── __tests__/                  # Vitest specs (incl. NEXT_PUBLIC_ guard, network guard)
 ├── e2e/                        # Playwright smoke specs
-├── next.config.ts              # cacheComponents, empty images.remotePatterns
+├── next.config.ts              # cacheComponents; images.remotePatterns from AUTHORISED_IMAGE_HOSTS (empty)
 ├── vitest.config.mts           # jsdom, coverage thresholds (75%; 90% lib/api, lib/seo)
 ├── vitest.setup.ts             # jest-dom, cleanup, fetch blocked unless stubbed
 ├── playwright.config.ts        # Starts backend + Next dev server
@@ -57,6 +62,21 @@ frontend/
 ```
 
 Adjust structure when useful, but keep modules cohesive and avoid oversized files.
+
+### Catalogue UI building blocks (OR-022)
+
+| Piece | Rule |
+|---|---|
+| `lib/api/schemas/catalogue.ts` | Zod schemas mirroring the backend; prices are decimal strings or `null`, timestamps need a timezone, image URLs must be http(s). A malformed payload is an `ApiError("invalid_response")` |
+| `lib/api/catalogue.ts` | `getProduct` / `getCategory` return `null` on 404 or a malformed slug (pages call `notFound()`); other failures throw |
+| `Price` | `Intl.NumberFormat("en-PK", PKR)`: "Rs 1,499", "Rs 999.50"; `null` shows "Price not available", never 0 |
+| `AvailabilityBadge` | Shows the backend's label as is; adds the check time (Asia/Karachi) only for verified statuses |
+| `ProductImage` | `next/image` only for `authorisedImageSrc` URLs: our `/dev-fixture/` placeholders, or hosts in `AUTHORISED_IMAGE_HOSTS` (none). Anything else, or no image, renders a "No image available for …" placeholder |
+| `ProductCard` | One link named after the product; long names clamped to two lines with the full name in the accessible text and `title` |
+| `DevDataBanner` | Renders only if an item has `data_source === "dev_fixture"` / `is_development_data` |
+| `CategoryNav` | Request-time (`connection()`) inside `Suspense` in the header; top-level categories with products; omitted, with a log line, if the API fails. Because of it every route is a Partial Prerender (`◐`) |
+
+All of these are Server Components; none needs `"use client"`.
 
 ---
 
