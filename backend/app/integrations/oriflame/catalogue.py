@@ -37,7 +37,11 @@ from backend.app.integrations.oriflame.client import (
 from backend.app.models import CatalogueSyncRun, SyncRunStatus
 from backend.app.repositories.categories import upsert_categories
 from backend.app.repositories.outcomes import UpsertOutcome
-from backend.app.repositories.products import hide_products_missing_from, upsert_product
+from backend.app.repositories.products import (
+    hide_products_missing_from,
+    other_sources_present,
+    upsert_product,
+)
 from backend.app.repositories.sync_runs import (
     SyncCounts,
     catalogue_sync_lock,
@@ -50,6 +54,17 @@ BATCH_SIZE = 100
 MAX_DETAIL_LINES = 50
 
 logger = structlog.get_logger(__name__)
+
+
+class MixedSourcesError(RuntimeError):
+    """Products from another source exist; mixing fixture and real data is refused."""
+
+    def __init__(self, source: str, others: list[str]) -> None:
+        super().__init__(
+            f"Refusing to sync '{source}': the database already has products from "
+            f"{', '.join(others)}. Mixing development fixtures and real data is not allowed."
+        )
+        self.others = others
 
 
 @dataclass(frozen=True)
@@ -115,9 +130,19 @@ class CatalogueSyncService:
         self._batch_size = batch_size
         self._clock = clock
 
-    def run(self, source: CatalogueSource) -> SyncReport:
-        """Sync once. Raises SyncAlreadyRunningError if another sync holds the lock."""
+    def run(self, source: CatalogueSource, *, allow_mixed_sources: bool = False) -> SyncReport:
+        """Sync once.
+
+        Raises SyncAlreadyRunningError if another sync holds the lock, and
+        MixedSourcesError if products from another source exist (no run is recorded in
+        either case). ``allow_mixed_sources`` is the CLI's ``--force-dev``, which the
+        CLI permits only in development.
+        """
         with catalogue_sync_lock(self._engine), self._session() as session:
+            if not allow_mixed_sources:
+                others = other_sources_present(session, source.name)
+                if others:
+                    raise MixedSourcesError(source.name, others)
             return self._run_locked(session, source)
 
     @contextmanager
@@ -162,7 +187,7 @@ class CatalogueSyncService:
 
         hidden: list[str] = []
         if complete:
-            hidden = hide_products_missing_from(session, seen)
+            hidden = hide_products_missing_from(session, source.name, seen)
             if hidden:
                 log.info("catalogue_products_hidden", count=len(hidden), source_ids=hidden[:20])
                 tally.note(f"Hidden (no longer listed by the source): {len(hidden)}")
@@ -194,7 +219,7 @@ class CatalogueSyncService:
                     continue
                 seen.add(item.source_id)
                 try:
-                    result = upsert_product(session, item, synced_at=synced_at)
+                    result = upsert_product(session, item, source=source.name, synced_at=synced_at)
                 except (IntegrityError, DataError) as exc:
                     tally.error(
                         f"product {item.source_id}: database rejected it ({type(exc).__name__})"

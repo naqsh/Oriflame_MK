@@ -1,0 +1,222 @@
+{
+  "fixture_notice": "Development fixture - not live Oriflame data. Placeholder names, SKUs, prices and images only.",
+  "categories": [
+    {
+      "source_id": "dev-cat-a",
+      "name": "Sample Category A"
+    },
+    {
+      "source_id": "dev-cat-a1",
+      "name": "Sample Category A1",
+      "parent_source_id": "dev-cat-a"
+    },
+    {
+      "source_id": "dev-cat-b",
+      "name": "Sample Category B"
+    }
+  ],
+  "products": [
+    {
+      "source_id": "dev-sample-01",
+      "name": "Sample Product 01",
+      "source_url": "http://localhost:3000/dev-fixture/products/dev-sample-01",
+      "sku": "DEV-0001",
+      "description": "Placeholder description for Sample Product 01. Development data only, not a real Oriflame product.",
+      "price_pkr": "100.00",
+      "category_source_ids": [
+        "dev-cat-a1"
+      ],
+      "images": [
+        {
+          "url": "http://localhost:3000/dev-fixture/sample-product.svg",
+          "alt_text": "Placeholder image for Sample Product 01",
+          "source_url": "http://localhost:3000/dev-fixture/products/dev-sample-01"
+        }
+      ]
+    },
+    {
+      "source_id": "dev-sample-02",
+      "name": "Sample Product 02",
+      "source_url": "http://localhost:3000/dev-fixture/products/dev-sample-02",
+      "sku": "DEV-0002",
+      "description": "Placeholder description for Sample Product 02. Development data only, not a real Oriflame product.",
+      "price_pkr": "200.00",
+      "category_source_ids": [
+        "dev-cat-a1"
+      ],
+      "images": [
+        {
+          "url": "http://localhost:3000/dev-fixture/sample-product.svg",
+          "alt_text": "Placeholder image for Sample Product 02",
+          "source_url": "http://localhost:3000/dev-fixture/products/dev-sample-02"
+        }
+      ]
+    },
+    {
+      "source_id": "dev-sample-03",
+      "name": "Sample Product 03",
+      "source_url": "http://localhost:3000/dev-fixture/products/dev-sample-03",
+      "sku": "DEV-0003",
+      "description": "Placeholder description for Sample Product 03. Development data only, not a real Oriflame product.",
+      "price_pkr": null,
+      "category_source_ids": [
+        "dev-cat-a1"
+      ],
+      "images": [
+        {
+          "url": "http://localhost:3000/dev-fixture/sample-product.svg",
+          "alt_text": "Placeholder image for Sample Product 03",
+          "source_url": "http://localhost:3000/dev-fixture/products/dev-sample-03"
+        }
+      ]
+    },
+    {
+      "source_id": "dev-sample-04",
+      "name": "Sample Product 04",
+      "source_url": "http://localhost:3000/dev-fixture/products/dev-sample-04",
+      "sku": "DEV-0004",
+      "description": "Placeholder description for Sample Product 04. Development data only, not a real Oriflame product.",
+      "price_pkr": "400.00",
+      "category_source_ids": [
+        "dev-cat-a1"
+      ],
+      "images": []
+    },
+    {
+      "source_id": "dev-sample-05",
+      "name": "Sample Product 05",
+      "source_url": "http://localhost:3000/dev-fixture/products/dev-sample-05",
+      "sku": "DEV-0005",
+      "description": "Placeholder description for Sample Product 05. Development data only, not a real Oriflame product.",
+      "price_pkr": "500.00",
+      "category_source_ids": [
+        "dev-cat-a"
+      ],
+      "images": [
+        {
+          "url": "http://localhost:3000/dev-fixture/sample-product.svg",
+          "alt_text": "Placeholder image for Sample Product 05",
+          "source_url": "http://localhost:3000/dev-fixture/products/dev-sample-05"
+        }
+      ]
+    },
+    {
+      "source_id": "dev-sample-06",
+      "name": "Sample Product 06",
+      "source_url": "http://localhost:3000/dev-fixture/products/dev-sample-06",
+      "sku": "DEV-0006",
+      "description": "Placeholder description for Sample Product 06. Development data only, not a real Oriflame product.",
+      "price_pkr": null,
+      "category_source_ids": [
+        "dev-cat-a"
+      ],
+      "images": [
+        {
+          "url": "http://localhost:3000/dev-fixture/sample-product.svg",
+          "alt_text": "Placeholder image for Sample Product 06",
+          "source_url": "http://localhost:3000/dev-fixture/products/dev-sample-06"
+        }
+      ]
+    },
+    {
+      "source_id": "dev-sample-07",
+      "name": "Sample Product 07",
+      "source_url": "http://localhost:3000/dev-fixture/products/dev-sample-07",
+      "sku": "DEV-0007",
+      "description": "Placeholder description for Sample Product 07. Development data only, not a real Oriflame product.",
+      "price_pkr": "700.00",
+      "category_source_ids": [
+        "dev-cat-a"
+      ],
+      "images": [
+        {
+          "url": "http://localhost:3000/dev-fixture/sample-product.svg",
+          "alt_text": "Placeholder image for Sample Product 07",
+          "source_url": "http://localhost:3000/dev-fixture/products/dev-sample-07"
+        }
+      ]
+    },
+    {
+      "source_id": "dev-sample-08",
+      "name": "Sample Product 08",
+      "source_url": "http://localhost:3000/dev-fixture/products/dev-sample-08",
+      "sku": "DEV-0008",
+      "description": "Placeholder description for Sample Product 08. Development data only, not a real Oriflame product.",
+      "price_pkr": "800.00",
+      "category_source_ids": [
+        "dev-cat-a"
+      ],
+      "images": []
+    },
+    {
+      "source_id": "dev-sample-09",
+      "name": "Sample Product 09",
+      "source_url": "http://localhost:3000/dev-fixture/products/dev-sample-09",
+      "sku": "DEV-0009",
+      "description": "Placeholder description for Sample Product 09. Development data only, not a real Oriflame product.",
+      "price_pkr": null,
+      "category_source_ids": [
+        "dev-cat-b",
+        "dev-cat-a"
+      ],
+      "images": [
+        {
+          "url": "http://localhost:3000/dev-fixture/sample-product.svg",
+          "alt_text": "Placeholder image for Sample Product 09",
+          "source_url": "http://localhost:3000/dev-fixture/products/dev-sample-09"
+        }
+      ]
+    },
+    {
+      "source_id": "dev-sample-10",
+      "name": "Sample Product 10",
+      "source_url": "http://localhost:3000/dev-fixture/products/dev-sample-10",
+      "sku": "DEV-0010",
+      "description": "Placeholder description for Sample Product 10. Development data only, not a real Oriflame product.",
+      "price_pkr": "1000.00",
+      "category_source_ids": [
+        "dev-cat-b",
+        "dev-cat-a"
+      ],
+      "images": [
+        {
+          "url": "http://localhost:3000/dev-fixture/sample-product.svg",
+          "alt_text": "Placeholder image for Sample Product 10",
+          "source_url": "http://localhost:3000/dev-fixture/products/dev-sample-10"
+        }
+      ]
+    },
+    {
+      "source_id": "dev-sample-11",
+      "name": "Sample Product 11",
+      "source_url": "http://localhost:3000/dev-fixture/products/dev-sample-11",
+      "sku": "DEV-0011",
+      "description": "Placeholder description for Sample Product 11. Development data only, not a real Oriflame product.",
+      "price_pkr": "1100.00",
+      "category_source_ids": [
+        "dev-cat-b",
+        "dev-cat-a"
+      ],
+      "images": [
+        {
+          "url": "http://localhost:3000/dev-fixture/sample-product.svg",
+          "alt_text": "Placeholder image for Sample Product 11",
+          "source_url": "http://localhost:3000/dev-fixture/products/dev-sample-11"
+        }
+      ]
+    },
+    {
+      "source_id": "dev-sample-12",
+      "name": "Sample Product 12",
+      "source_url": "http://localhost:3000/dev-fixture/products/dev-sample-12",
+      "sku": "DEV-0012",
+      "description": "Placeholder description for Sample Product 12. Development data only, not a real Oriflame product.",
+      "price_pkr": null,
+      "category_source_ids": [
+        "dev-cat-b",
+        "dev-cat-a"
+      ],
+      "images": []
+    }
+  ]
+}

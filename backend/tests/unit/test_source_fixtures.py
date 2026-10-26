@@ -1,6 +1,7 @@
-"""Fixture catalogue source, record parsing and source selection (OR-013)."""
+"""Fixture catalogue source, record parsing and source selection (OR-013, OR-015)."""
 
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -16,6 +17,7 @@ from backend.app.integrations.oriflame.client import (
     parse_records,
 )
 from backend.app.integrations.oriflame.fixtures import (
+    DEFAULT_FIXTURE_PATH,
     FIXTURE_SOURCE_NAME,
     FixtureCatalogueSource,
     FixturesForbiddenError,
@@ -31,7 +33,14 @@ VALID_PRODUCT = {
 }
 
 
+NOTICE = "Development fixture - test data"
+SAMPLE = json.loads(DEFAULT_FIXTURE_PATH.read_text(encoding="utf-8"))
+
+
 def _write(tmp_path: Path, document: object) -> Path:
+    """Write a fixture file; dicts get the required fixture_notice unless they set one."""
+    if isinstance(document, dict):
+        document = {"fixture_notice": NOTICE, **document}
     path = tmp_path / "dev_catalogue_test.json"
     path.write_text(json.dumps(document), encoding="utf-8")
     return path
@@ -56,21 +65,16 @@ def test_fixture_source_yields_validated_records(tmp_path: Path) -> None:
     assert product.images == ()
 
 
-def test_invalid_records_are_reported_without_input_values(tmp_path: Path) -> None:
+def test_invalid_payloads_are_reported_without_input_values() -> None:
     secretish = "do-not-echo-this-value"
-    path = _write(
-        tmp_path,
-        {
-            "products": [
-                {"name": "No id", "source_url": "http://localhost:3000/x"},
-                {**VALID_PRODUCT, "source_id": "dev-002", "source_url": secretish},
-                VALID_PRODUCT,
-            ]
-        },
-    )
-    results = list(FixtureCatalogueSource(path, app_env="test").iter_products())
+    payloads = [
+        {"name": "No id", "source_url": "http://localhost:3000/x"},
+        {**VALID_PRODUCT, "source_id": "dev-002", "source_url": secretish},
+        VALID_PRODUCT,
+    ]
 
-    missing_id, bad_url, valid = results
+    missing_id, bad_url, valid = list(parse_records(SourceProduct, payloads))
+
     assert isinstance(missing_id, InvalidRecord)
     assert missing_id.source_id is None
     assert "source_id" in missing_id.problems
@@ -78,6 +82,30 @@ def test_invalid_records_are_reported_without_input_values(tmp_path: Path) -> No
     assert bad_url.source_id == "dev-002"
     assert secretish not in bad_url.problems
     assert isinstance(valid, SourceProduct)
+
+
+def test_one_invalid_fixture_record_rejects_the_whole_file(tmp_path: Path) -> None:
+    secretish = "do-not-echo-this-value"
+    path = _write(
+        tmp_path,
+        {"products": [VALID_PRODUCT, {**VALID_PRODUCT, "source_id": "dev-2", "x": secretish}]},
+    )
+    with pytest.raises(SourceMalformedError, match=r"1 invalid record\(s\): dev-2") as caught:
+        FixtureCatalogueSource(path, app_env="development")
+    assert secretish not in str(caught.value)
+
+
+@pytest.mark.parametrize(
+    "notice", [None, "", "Live catalogue"], ids=["missing", "empty", "wrong-prefix"]
+)
+def test_file_without_a_fixture_notice_is_refused(tmp_path: Path, notice: str | None) -> None:
+    document: dict[str, object] = {"products": [VALID_PRODUCT]}
+    if notice is not None:
+        document["fixture_notice"] = notice
+    path = tmp_path / "dev_catalogue_unmarked.json"
+    path.write_text(json.dumps(document), encoding="utf-8")
+    with pytest.raises(SourceMalformedError, match="fixture_notice"):
+        FixtureCatalogueSource(path, app_env="development")
 
 
 def test_production_refuses_fixtures(tmp_path: Path) -> None:
@@ -140,3 +168,42 @@ def test_integration_code_never_targets_oriflame_hosts() -> None:
         if "oriflame.com" in path.read_text(encoding="utf-8").lower()
     ]
     assert offenders == []
+
+
+# --- The shipped sample fixture (OR-015) -------------------------------------------
+
+
+def test_sample_fixture_is_named_and_marked_as_development_data() -> None:
+    assert "dev" in DEFAULT_FIXTURE_PATH.name
+    assert "sample" in DEFAULT_FIXTURE_PATH.name
+    assert SAMPLE["fixture_notice"].startswith("Development fixture")
+    assert "not live Oriflame data" in SAMPLE["fixture_notice"]
+
+
+def test_sample_fixture_loads_completely() -> None:
+    source = FixtureCatalogueSource(DEFAULT_FIXTURE_PATH, app_env="development")
+    assert source.name == "dev_fixture"
+    assert len(list(source.iter_products())) == len(SAMPLE["products"]) == 12
+    assert len(list(source.iter_categories())) == len(SAMPLE["categories"]) == 3
+
+
+def test_sample_fixture_refuses_production() -> None:
+    with pytest.raises(FixturesForbiddenError):
+        FixtureCatalogueSource(DEFAULT_FIXTURE_PATH, app_env="production")
+
+
+def test_sample_fixture_contains_only_placeholders() -> None:
+    """Grep-style guard: no real Oriflame names, SKUs, hosts or image URLs."""
+    raw = DEFAULT_FIXTURE_PATH.read_text(encoding="utf-8").lower()
+    for forbidden in ("oriflame.com", "media-cdn", "productimage", "https://"):
+        assert forbidden not in raw
+    for product in SAMPLE["products"]:
+        assert re.fullmatch(r"Sample Product \d{2}", product["name"])
+        assert re.fullmatch(r"DEV-\d{4}", product["sku"])
+        assert re.fullmatch(r"dev-sample-\d{2}", product["source_id"])
+        urls = [product["source_url"]] + [
+            url for image in product["images"] for url in (image["url"], image["source_url"])
+        ]
+        assert all(url.startswith("http://localhost:3000/dev-fixture/") for url in urls)
+    for category in SAMPLE["categories"]:
+        assert category["name"].startswith("Sample Category")

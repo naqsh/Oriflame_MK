@@ -29,6 +29,7 @@ pytestmark = pytest.mark.db
 FIRST_SYNC = datetime(2026, 10, 26, 8, 0, tzinfo=UTC)
 SECOND_SYNC = FIRST_SYNC + timedelta(hours=6)
 LONG_AGO = datetime(2020, 1, 1, tzinfo=UTC)
+SOURCE = "test_source"
 
 
 def _image(name: str, alt: str = "Fixture image") -> ImageRecord:
@@ -75,9 +76,9 @@ def _image_urls(session: Session) -> list[str]:
 
 
 def test_same_record_twice_creates_one_row_then_unchanged(db_session: Session) -> None:
-    first = upsert_product(db_session, _record(), synced_at=FIRST_SYNC)
+    first = upsert_product(db_session, _record(), source=SOURCE, synced_at=FIRST_SYNC)
     _age_updated_at(db_session)
-    second = upsert_product(db_session, _record(), synced_at=SECOND_SYNC)
+    second = upsert_product(db_session, _record(), source=SOURCE, synced_at=SECOND_SYNC)
 
     assert (first.outcome, second.outcome) == (UpsertOutcome.CREATED, UpsertOutcome.UNCHANGED)
     assert first.product_id == second.product_id
@@ -89,11 +90,11 @@ def test_same_record_twice_creates_one_row_then_unchanged(db_session: Session) -
 
 
 def test_changed_price_is_updated_and_persisted(db_session: Session) -> None:
-    upsert_product(db_session, _record(), synced_at=FIRST_SYNC)
+    upsert_product(db_session, _record(), source=SOURCE, synced_at=FIRST_SYNC)
     _age_updated_at(db_session)
 
     cheaper = _record(price_pkr=Decimal("1299.50"))
-    result = upsert_product(db_session, cheaper, synced_at=SECOND_SYNC)
+    result = upsert_product(db_session, cheaper, source=SOURCE, synced_at=SECOND_SYNC)
 
     assert result.outcome is UpsertOutcome.UPDATED
     product = _product(db_session)
@@ -103,18 +104,20 @@ def test_changed_price_is_updated_and_persisted(db_session: Session) -> None:
 
 
 def test_price_removed_by_source_becomes_null(db_session: Session) -> None:
-    upsert_product(db_session, _record(), synced_at=FIRST_SYNC)
-    result = upsert_product(db_session, _record(price_pkr=None), synced_at=SECOND_SYNC)
+    upsert_product(db_session, _record(), source=SOURCE, synced_at=FIRST_SYNC)
+    result = upsert_product(
+        db_session, _record(price_pkr=None), source=SOURCE, synced_at=SECOND_SYNC
+    )
     assert result.outcome is UpsertOutcome.UPDATED
     assert _product(db_session).price_pkr is None
 
 
 def test_image_list_changes_are_reflected_exactly(db_session: Session) -> None:
-    upsert_product(db_session, _record(), synced_at=FIRST_SYNC)
+    upsert_product(db_session, _record(), source=SOURCE, synced_at=FIRST_SYNC)
     _age_updated_at(db_session)
 
     reordered = _record(images=(_image("c"), _image("a")))
-    result = upsert_product(db_session, reordered, synced_at=SECOND_SYNC)
+    result = upsert_product(db_session, reordered, source=SOURCE, synced_at=SECOND_SYNC)
 
     assert result.outcome is UpsertOutcome.UPDATED  # only the images changed
     assert _image_urls(db_session) == [
@@ -125,9 +128,9 @@ def test_image_list_changes_are_reflected_exactly(db_session: Session) -> None:
 
 
 def test_alt_text_change_counts_as_update(db_session: Session) -> None:
-    upsert_product(db_session, _record(), synced_at=FIRST_SYNC)
+    upsert_product(db_session, _record(), source=SOURCE, synced_at=FIRST_SYNC)
     changed = _record(images=(_image("a", alt="Better alt text"), _image("b")))
-    assert upsert_product(db_session, changed, synced_at=SECOND_SYNC).outcome is (
+    assert upsert_product(db_session, changed, source=SOURCE, synced_at=SECOND_SYNC).outcome is (
         UpsertOutcome.UPDATED
     )
 
@@ -135,7 +138,7 @@ def test_alt_text_change_counts_as_update(db_session: Session) -> None:
 def test_repeated_upserts_never_duplicate_images(db_session: Session) -> None:
     record = _record(images=(_image("a"), _image("b"), _image("a")))
     for _ in range(3):
-        upsert_product(db_session, record, synced_at=FIRST_SYNC)
+        upsert_product(db_session, record, source=SOURCE, synced_at=FIRST_SYNC)
     assert _image_urls(db_session) == [
         "https://example.test/img/a.jpg",
         "https://example.test/img/b.jpg",
@@ -143,8 +146,8 @@ def test_repeated_upserts_never_duplicate_images(db_session: Session) -> None:
 
 
 def test_removing_all_images(db_session: Session) -> None:
-    upsert_product(db_session, _record(), synced_at=FIRST_SYNC)
-    upsert_product(db_session, _record(images=()), synced_at=SECOND_SYNC)
+    upsert_product(db_session, _record(), source=SOURCE, synced_at=FIRST_SYNC)
+    upsert_product(db_session, _record(images=()), source=SOURCE, synced_at=SECOND_SYNC)
     assert _count(db_session, ProductImage) == 0
 
 
@@ -153,11 +156,13 @@ def test_category_links_are_reconciled(db_session: Session) -> None:
         db_session,
         [CategoryRecord(source_id=s, name=f"Category {s}") for s in ("c1", "c2", "c3")],
     )
-    upsert_product(db_session, _record(category_source_ids=["c1", "c2"]), synced_at=FIRST_SYNC)
+    upsert_product(
+        db_session, _record(category_source_ids=["c1", "c2"]), source=SOURCE, synced_at=FIRST_SYNC
+    )
     _age_updated_at(db_session)
 
     result = upsert_product(
-        db_session, _record(category_source_ids=["c2", "c3"]), synced_at=SECOND_SYNC
+        db_session, _record(category_source_ids=["c2", "c3"]), source=SOURCE, synced_at=SECOND_SYNC
     )
 
     assert result.outcome is UpsertOutcome.UPDATED
@@ -170,7 +175,10 @@ def test_unknown_category_is_reported_not_created(db_session: Session) -> None:
     upsert_categories(db_session, [CategoryRecord(source_id="c1", name="Skincare")])
 
     result = upsert_product(
-        db_session, _record(category_source_ids=["c1", "not-yet"]), synced_at=FIRST_SYNC
+        db_session,
+        _record(category_source_ids=["c1", "not-yet"]),
+        source=SOURCE,
+        synced_at=FIRST_SYNC,
     )
 
     assert result.outcome is UpsertOutcome.CREATED
@@ -180,27 +188,30 @@ def test_unknown_category_is_reported_not_created(db_session: Session) -> None:
 
 
 def test_slug_is_stable_when_the_name_changes(db_session: Session) -> None:
-    upsert_product(db_session, _record(), synced_at=FIRST_SYNC)
-    upsert_product(db_session, _record(name="Renamed Fixture"), synced_at=SECOND_SYNC)
+    upsert_product(db_session, _record(), source=SOURCE, synced_at=FIRST_SYNC)
+    upsert_product(
+        db_session, _record(name="Renamed Fixture"), source=SOURCE, synced_at=SECOND_SYNC
+    )
     product = _product(db_session)
     assert (product.name, product.slug) == ("Renamed Fixture", "fixture-peach-glow")
 
 
 def test_slug_collision_between_source_products_gets_source_suffix(db_session: Session) -> None:
-    upsert_product(db_session, _record(), synced_at=FIRST_SYNC)
+    upsert_product(db_session, _record(), source=SOURCE, synced_at=FIRST_SYNC)
     upsert_product(
         db_session,
         _record(source_id="p2", source_url="https://example.test/products/p2"),
+        source=SOURCE,
         synced_at=FIRST_SYNC,
     )
     assert _product(db_session, "p2").slug == "fixture-peach-glow-p2"
 
 
 def test_admin_flags_survive_a_sync(db_session: Session) -> None:
-    upsert_product(db_session, _record(), synced_at=FIRST_SYNC)
+    upsert_product(db_session, _record(), source=SOURCE, synced_at=FIRST_SYNC)
     db_session.execute(update(Product).values(is_visible=False, is_featured=True))
 
-    upsert_product(db_session, _record(name="Changed"), synced_at=SECOND_SYNC)
+    upsert_product(db_session, _record(name="Changed"), source=SOURCE, synced_at=SECOND_SYNC)
 
     product = _product(db_session)
     assert (product.is_visible, product.is_featured) == (False, True)
@@ -209,7 +220,7 @@ def test_admin_flags_survive_a_sync(db_session: Session) -> None:
 def test_failed_upsert_rolls_back_only_that_product(
     db_session: Session, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    upsert_product(db_session, _record(), synced_at=FIRST_SYNC)
+    upsert_product(db_session, _record(), source=SOURCE, synced_at=FIRST_SYNC)
 
     def broken(*_: object) -> bool:
         raise RuntimeError("simulated failure while writing images")
@@ -217,7 +228,7 @@ def test_failed_upsert_rolls_back_only_that_product(
     monkeypatch.setattr(products_repo, "_replace_images", broken)
     second = _record(source_id="p2", source_url="https://example.test/products/p2")
     with pytest.raises(RuntimeError):
-        upsert_product(db_session, second, synced_at=FIRST_SYNC)
+        upsert_product(db_session, second, source=SOURCE, synced_at=FIRST_SYNC)
 
     db_session.expire_all()
     assert [p.source_id for p in db_session.scalars(select(Product))] == ["p1"]
@@ -240,6 +251,7 @@ def test_record_values_are_bound_parameters_never_sql_text(
         upsert_product(
             db_session,
             _record(name=hostile, description=hostile, category_source_ids=["c-" + hostile]),
+            source=SOURCE,
             synced_at=FIRST_SYNC,
         )
     finally:
@@ -390,7 +402,7 @@ def test_lock_is_released_when_the_sync_raises(migrated_engine: Engine) -> None:
 
 
 def test_hiding_with_an_empty_source_list_is_refused(db_session: Session) -> None:
-    upsert_product(db_session, _record(), synced_at=FIRST_SYNC)
+    upsert_product(db_session, _record(), source=SOURCE, synced_at=FIRST_SYNC)
     with pytest.raises(ValueError, match="Refusing to hide every product"):
-        hide_products_missing_from(db_session, set())
+        hide_products_missing_from(db_session, SOURCE, set())
     assert _product(db_session).is_visible is True

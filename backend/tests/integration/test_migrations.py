@@ -9,7 +9,7 @@ from collections.abc import Iterator
 import pytest
 from alembic import command
 from alembic.config import Config
-from sqlalchemy import Engine, text
+from sqlalchemy import Engine, inspect, text
 from sqlalchemy.orm import Session
 
 from backend.tests.conftest import alembic_config
@@ -33,7 +33,7 @@ def test_upgrade_head_on_empty_database(migration_config: Config, migrated_engin
 
     with migrated_engine.connect() as connection:
         version = connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
-    assert version == "002_catalogue_schema"
+    assert version == "003_product_source"
 
 
 def test_downgrade_base_then_upgrade_head(migration_config: Config) -> None:
@@ -43,6 +43,15 @@ def test_downgrade_base_then_upgrade_head(migration_config: Config) -> None:
 
 def test_downgrade_one_then_upgrade_head(migration_config: Config, migrated_engine: Engine) -> None:
     command.downgrade(migration_config, "-1")
+    assert "source" not in {c["name"] for c in inspect(migrated_engine).get_columns("products")}
+    command.upgrade(migration_config, "head")
+    assert "source" in {c["name"] for c in inspect(migrated_engine).get_columns("products")}
+
+
+def test_downgrade_catalogue_schema_removes_tables_and_enum(
+    migration_config: Config, migrated_engine: Engine
+) -> None:
+    command.downgrade(migration_config, "001_baseline")
     with migrated_engine.connect() as connection:
         leftover = connection.execute(
             text(

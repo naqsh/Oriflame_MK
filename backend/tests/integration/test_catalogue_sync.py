@@ -17,7 +17,11 @@ from sqlalchemy.orm import Session, sessionmaker
 from structlog.testing import capture_logs
 
 from backend.app.integrations.oriflame import catalogue as catalogue_module
-from backend.app.integrations.oriflame.catalogue import MAX_DETAIL_LINES, CatalogueSyncService
+from backend.app.integrations.oriflame.catalogue import (
+    MAX_DETAIL_LINES,
+    CatalogueSyncService,
+    MixedSourcesError,
+)
 from backend.app.integrations.oriflame.client import (
     InvalidRecord,
     SourceAuthError,
@@ -26,7 +30,7 @@ from backend.app.integrations.oriflame.client import (
     SourceProduct,
     SourceUnavailableError,
 )
-from backend.app.integrations.oriflame.fixtures import FixtureCatalogueSource
+from backend.app.integrations.oriflame.fixtures import DEFAULT_FIXTURE_PATH, FixtureCatalogueSource
 from backend.app.models import CatalogueSyncRun, Category, Product, ProductImage, SyncRunStatus
 from backend.app.repositories.products import upsert_product
 from backend.app.repositories.sync_runs import SyncAlreadyRunningError, catalogue_sync_lock
@@ -120,6 +124,7 @@ def test_two_runs_of_the_same_fixture_are_idempotent(
     path.write_text(
         json.dumps(
             {
+                "fixture_notice": "Development fixture - sync test",
                 "categories": [{"source_id": "dev-cat-1", "name": "Sample Category"}],
                 "products": [_product(f"dev-{n}").model_dump(mode="json") for n in range(5)],
             }
@@ -340,7 +345,7 @@ def test_database_failure_outside_a_record_is_recorded_then_raised(
 def test_sync_emits_structured_events(service: CatalogueSyncService) -> None:
     with capture_logs() as logs:
         service.run(ListSource([_product("p1")]))
-        service.run(ListSource([], name="empty_source"))
+        service.run(ListSource([]))
 
     events = [entry["event"] for entry in logs]
     assert events == [
@@ -368,3 +373,55 @@ def test_hidden_product_that_reappears_is_updated_but_stays_hidden(
     service.run(ListSource([_product("p1"), _product("p2", name="Renamed")]))
 
     assert _visible(sessions) == {"p1": True, "p2": False}
+
+
+# --- Development fixtures and mixed sources (OR-015) ---------------------------------
+
+
+def test_shipped_sample_fixture_syncs_idempotently_and_is_marked(
+    service: CatalogueSyncService, sessions: sessionmaker[Session]
+) -> None:
+    first = service.run(FixtureCatalogueSource(DEFAULT_FIXTURE_PATH, app_env="development"))
+    second = service.run(FixtureCatalogueSource(DEFAULT_FIXTURE_PATH, app_env="development"))
+
+    assert first.status is second.status is SyncRunStatus.SUCCESS
+    assert first.error_detail is None
+    assert (first.counts.created, second.counts.unchanged) == (12, 12)
+    assert _counts(sessions) == (12, 3, 9)
+    with sessions() as session:
+        assert set(session.scalars(select(Product.source))) == {"dev_fixture"}
+
+
+def test_fixture_sync_refused_when_real_products_exist(
+    service: CatalogueSyncService, sessions: sessionmaker[Session]
+) -> None:
+    service.run(ListSource([_product("real-1")], name="permitted_feed"))
+
+    with pytest.raises(MixedSourcesError, match="permitted_feed"):
+        service.run(FixtureCatalogueSource(DEFAULT_FIXTURE_PATH, app_env="development"))
+
+    assert len(_runs(sessions)) == 1  # the refused sync recorded nothing
+    assert set(_visible(sessions)) == {"real-1"}
+
+
+def test_real_sync_refused_when_fixture_products_exist(
+    service: CatalogueSyncService, sessions: sessionmaker[Session]
+) -> None:
+    service.run(FixtureCatalogueSource(DEFAULT_FIXTURE_PATH, app_env="development"))
+    with pytest.raises(MixedSourcesError, match="dev_fixture"):
+        service.run(ListSource([_product("real-1")], name="permitted_feed"))
+
+
+def test_forced_mixing_never_hides_the_other_sources_products(
+    service: CatalogueSyncService, sessions: sessionmaker[Session]
+) -> None:
+    service.run(ListSource([_product("real-1")], name="permitted_feed"))
+
+    report = service.run(
+        FixtureCatalogueSource(DEFAULT_FIXTURE_PATH, app_env="development"),
+        allow_mixed_sources=True,
+    )
+
+    assert report.status is SyncRunStatus.SUCCESS
+    assert report.hidden_source_ids == []
+    assert _visible(sessions)["real-1"] is True

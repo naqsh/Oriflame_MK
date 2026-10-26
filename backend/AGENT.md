@@ -70,15 +70,18 @@ backend/
 │   │       ├── __init__.py     # get_catalogue_source(settings) - picks the CATALOGUE_SOURCE adapter
 │   │       ├── catalogue.py    # CatalogueSyncService: lock, run row, batches, hide removed, final status
 │   │       ├── client.py       # CatalogueSource Protocol, SourceError family, InvalidRecord, parse_records
-│   │       ├── fixtures.py     # FixtureCatalogueSource (dev_fixture; refuses APP_ENV=production)
+│   │       ├── fixtures.py     # FixtureCatalogueSource (dev_fixture; strict; refuses APP_ENV=production)
 │   │       └── http.py         # FeedHttpClient: timeouts, bounded retries, Retry-After, no auth bypass
 │   └── main.py                 # create_app() factory, CORS, 500 handler
+├── fixtures/
+│   └── dev_catalogue_sample.json  # Development-only placeholder catalogue (OR-015)
 ├── alembic/
 │   ├── env.py                  # URL from Settings, skips Supabase-managed schemas, URL-free errors
 │   ├── script.py.mako          # Migration template (RLS reminder)
 │   └── versions/
 │       ├── 001_baseline.py     # Empty schema; RLS on alembic_version
-│       └── 002_catalogue_schema.py  # Catalogue tables + sync_run_status enum; RLS on each
+│       ├── 002_catalogue_schema.py  # Catalogue tables + sync_run_status enum; RLS on each
+│       └── 003_product_source.py    # products.source (indexed; existing rows backfilled dev_fixture)
 └── tests/
     ├── conftest.py             # clean_env, app/client/async_client, TEST_POSTGRES_URL db fixtures
     ├── unit/                   # config, db session, slugs, catalogue schemas, sources (fixture, mocked HTTP)
@@ -172,7 +175,7 @@ Supabase PostgreSQL + Alembic. Every table in `public` gets `ENABLE ROW LEVEL SE
 
 | Table | Notes |
 |---|---|
-| `products` ✅ | `source_id` (unique), `sku` (indexed), `slug` (unique), name (`lower(name)` index), description, `price_pkr` (nullable, `> 0` when present; never 0 or guessed), `currency` (PKR only), `source_url`, `last_synced_at`, `is_visible`, `is_featured`, timestamps |
+| `products` ✅ | `source_id` (unique), `source` (catalogue source name, indexed; `dev_fixture` marks development data), `sku` (indexed), `slug` (unique), name (`lower(name)` index), description, `price_pkr` (nullable, `> 0` when present; never 0 or guessed), `currency` (PKR only), `source_url`, `last_synced_at`, `is_visible`, `is_featured`, timestamps |
 | `product_images` ✅ | FK → products, `ON DELETE CASCADE`; authorised assets only (empty while ADR-001 is Proposed); alt text; position unique per product |
 | `categories` ✅ | `source_id` and `slug` unique; `parent_id` self-FK, `ON DELETE SET NULL` |
 | `product_categories` ✅ | Composite PK; both FKs cascade, so deleting a product removes its memberships but never a shared category; `category_id` indexed |

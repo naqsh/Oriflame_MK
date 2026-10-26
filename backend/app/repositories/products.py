@@ -33,7 +33,7 @@ class ProductUpsertResult:
 
 
 def _upsert_row(
-    session: Session, record: ProductRecord, synced_at: datetime
+    session: Session, record: ProductRecord, source: str, synced_at: datetime
 ) -> tuple[int, UpsertOutcome]:
     slug = session.scalar(select(Product.slug).where(Product.source_id == record.source_id))
     if slug is None:
@@ -46,7 +46,11 @@ def _upsert_row(
         )
     values = record.model_dump(include=set(_SYNCED_FIELDS))
     statement = pg_insert(Product).values(
-        source_id=record.source_id, slug=slug, last_synced_at=synced_at, **values
+        source_id=record.source_id,
+        source=source,
+        slug=slug,
+        last_synced_at=synced_at,
+        **values,
     )
     excluded = statement.excluded
     upsert = statement.on_conflict_do_update(
@@ -144,11 +148,18 @@ def _reconcile_categories(
     return True, missing
 
 
+def other_sources_present(session: Session, source: str) -> list[str]:
+    """Names of other catalogue sources that already have products."""
+    return sorted(
+        session.scalars(select(Product.source).where(Product.source != source).distinct())
+    )
+
+
 def upsert_product(
-    session: Session, record: ProductRecord, *, synced_at: datetime
+    session: Session, record: ProductRecord, *, source: str, synced_at: datetime
 ) -> ProductUpsertResult:
     with session.begin_nested():
-        product_id, outcome = _upsert_row(session, record, synced_at)
+        product_id, outcome = _upsert_row(session, record, source, synced_at)
         images_changed = _replace_images(session, product_id, record)
         links_changed, missing = _reconcile_categories(session, product_id, record)
         children_changed = images_changed or links_changed
@@ -160,8 +171,12 @@ def upsert_product(
     return ProductUpsertResult(product_id=product_id, outcome=outcome, missing_categories=missing)
 
 
-def hide_products_missing_from(session: Session, seen_source_ids: Collection[str]) -> list[str]:
-    """Hide visible products the source no longer lists. Never deletes; returns their ids.
+def hide_products_missing_from(
+    session: Session, source: str, seen_source_ids: Collection[str]
+) -> list[str]:
+    """Hide visible products of ``source`` that it no longer lists. Never deletes.
+
+    Products from other sources are never touched. Returns the hidden source ids.
 
     An empty ``seen_source_ids`` would hide the whole catalogue, so it is refused.
     """
@@ -169,7 +184,11 @@ def hide_products_missing_from(session: Session, seen_source_ids: Collection[str
         raise ValueError("Refusing to hide every product: the source listed none.")
     hidden = session.scalars(
         update(Product)
-        .where(Product.is_visible.is_(True), Product.source_id.not_in(list(seen_source_ids)))
+        .where(
+            Product.source == source,
+            Product.is_visible.is_(True),
+            Product.source_id.not_in(list(seen_source_ids)),
+        )
         .values(is_visible=False, updated_at=func.now())
         .returning(Product.source_id)
     )

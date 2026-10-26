@@ -32,6 +32,7 @@ SYNCED_AT = datetime(2026, 10, 26, tzinfo=UTC)
 def _product(source_id: str, slug: str, **overrides: object) -> Product:
     fields: dict[str, object] = {
         "source_id": source_id,
+        "source": "test_source",
         "slug": slug,
         "name": f"Fixture product {source_id}",
         "source_url": f"https://example.test/products/{source_id}",

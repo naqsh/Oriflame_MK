@@ -9,6 +9,8 @@ from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
+from pydantic import BaseModel
+
 from backend.app.core.config import AppEnv
 from backend.app.integrations.oriflame.client import (
     InvalidRecord,
@@ -20,6 +22,7 @@ from backend.app.integrations.oriflame.client import (
 )
 
 FIXTURE_SOURCE_NAME = "dev_fixture"
+FIXTURE_NOTICE_PREFIX = "Development fixture"
 # Explicitly named development fixture (OR-015 provides the file).
 BACKEND_DIR = Path(__file__).resolve().parents[3]
 DEFAULT_FIXTURE_PATH = BACKEND_DIR / "fixtures" / "dev_catalogue_sample.json"
@@ -31,22 +34,46 @@ class FixturesForbiddenError(SourceError):
 
 
 class FixtureCatalogueSource:
-    """Reads ``{"categories": [...], "products": [...]}`` from a development fixture file."""
+    """Reads a development fixture file: ``fixture_notice``, ``categories``, ``products``.
+
+    Strict, unlike a live source: one invalid record rejects the whole file, so a
+    fixture is either loaded completely or not at all.
+    """
 
     def __init__(self, path: Path, *, app_env: AppEnv) -> None:
         if app_env == "production":
             raise FixturesForbiddenError
-        self._categories, self._products = _load(path)
+        categories, products = _load(path)
+        self._categories = _all_valid(path, SourceCategory, categories)
+        self._products = _all_valid(path, SourceProduct, products)
 
     @property
     def name(self) -> str:
         return FIXTURE_SOURCE_NAME
 
     def iter_categories(self) -> Iterator[SourceCategory | InvalidRecord]:
-        return parse_records(SourceCategory, self._categories)
+        yield from self._categories
 
     def iter_products(self) -> Iterator[SourceProduct | InvalidRecord]:
-        return parse_records(SourceProduct, self._products)
+        yield from self._products
+
+
+def _all_valid[RecordT: BaseModel](
+    path: Path, model: type[RecordT], payloads: list[Any]
+) -> list[RecordT]:
+    valid: list[RecordT] = []
+    problems: list[str] = []
+    for item in parse_records(model, payloads):
+        if isinstance(item, InvalidRecord):
+            problems.append(f"{item.source_id or '(no source_id)'}: {item.problems}")
+        else:
+            valid.append(item)
+    if problems:
+        shown = "; ".join(problems[:5])
+        raise SourceMalformedError(
+            f"Fixture file {path.name} has {len(problems)} invalid record(s): {shown}"
+        )
+    return valid
 
 
 def _load(path: Path) -> tuple[list[Any], list[Any]]:
@@ -64,4 +91,10 @@ def _load(path: Path) -> tuple[list[Any], list[Any]]:
         if not isinstance(section, list):
             raise SourceMalformedError(f"Fixture file {path.name}: '{key}' must be a list")
         sections.append(section)
+    notice = document.get("fixture_notice")
+    if not isinstance(notice, str) or not notice.startswith(FIXTURE_NOTICE_PREFIX):
+        raise SourceMalformedError(
+            f"Fixture file {path.name} lacks a 'fixture_notice' starting with "
+            f"'{FIXTURE_NOTICE_PREFIX}'; refusing to load it as development data"
+        )
     return sections[0], sections[1]

@@ -49,6 +49,8 @@ class Product(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     source_id: Mapped[str] = mapped_column(String(100), unique=True)
+    # Catalogue source name, e.g. dev_fixture; lets the UI flag development data.
+    source: Mapped[str] = mapped_column(String(50), index=True)
     sku: Mapped[str | None] = mapped_column(String(100), index=True)
     slug: Mapped[str] = mapped_column(String(SLUG_MAX_LENGTH), unique=True)
     name: Mapped[str] = mapped_column(String(300))

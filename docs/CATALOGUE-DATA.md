@@ -64,6 +64,15 @@ Record the chosen source, its terms, and image/content usage rights in an ADR (`
 - If mock data is needed for UI development, isolate it in an explicitly named development fixture (e.g. `fixtures/dev_catalogue_*.json`) and never present it as live Oriflame data.
 - Fixture loading must be impossible in `APP_ENV=production`.
 
+**The shipped fixture** (OR-015) is `backend/fixtures/dev_catalogue_sample.json`:
+
+- A `fixture_notice` starting "Development fixture - not live Oriflame data". Files without it are refused.
+- 3 categories (`Sample Category A`, `A1` under `A`, `B`) and 12 products named `Sample Product 01` to `12`, with SKUs `DEV-0001` and up. Every third product has no price, and every fourth has no image, so the UI covers those cases.
+- Images and source URLs point at `http://localhost:3000/dev-fixture/`, served from `frontend/public/dev-fixture/sample-product.svg`. No Oriflame names, SKUs, prices, hosts or images; a test enforces this.
+- Loaded products get `products.source = 'dev_fixture'`, so the UI can show a "Development data" banner.
+- Loading is all or nothing: a missing file, bad JSON or a single invalid record rejects the whole file.
+- **No mixing:** a sync is refused when products from another source exist, in either direction (`MixedSourcesError`). The CLI's `--force-dev`, in development only, overrides this, and hiding still never touches the other source's products.
+
 ---
 
 ## Data Model Summary
