@@ -53,9 +53,15 @@ backend/
 │   │   ├── base.py             # DeclarativeBase + constraint naming convention
 │   │   └── catalogue.py        # Product, ProductImage, Category, product_categories, CatalogueSyncRun
 │   ├── schemas/
+│   │   ├── catalogue.py        # ProductRecord, ImageRecord, CategoryRecord (validated sync input)
 │   │   ├── errors.py           # ErrorResponse
 │   │   └── health.py           # HealthResponse, ReadinessResponse
-│   ├── repositories/           # (planned) DB access, no business logic
+│   ├── repositories/           # DB access only, no HTTP or business logic
+│   │   ├── categories.py       # upsert_categories (two-pass parents), category_ids_by_source
+│   │   ├── outcomes.py         # UpsertOutcome (created/updated/unchanged), WAS_INSERTED
+│   │   ├── products.py         # upsert_product: row + images + category links in one savepoint
+│   │   ├── slugs.py            # new_slug: collision check against the database
+│   │   └── sync_runs.py        # start/finish/fail_stale_runs, catalogue_sync_lock (advisory lock)
 │   ├── services/
 │   │   ├── health.py           # ReadinessService (SELECT 1); (planned) products, availability, referral (ReferralService)
 │   │   └── slugs.py            # slugify + deterministic collision suffix (source id)
@@ -70,8 +76,8 @@ backend/
 │       └── 002_catalogue_schema.py  # Catalogue tables + sync_run_status enum; RLS on each
 └── tests/
     ├── conftest.py             # clean_env, app/client/async_client, TEST_POSTGRES_URL db fixtures
-    ├── unit/                   # config, db session, slugs
-    ├── integration/            # health, request context, migrations, catalogue schema (db)
+    ├── unit/                   # config, db session, slugs, catalogue schemas
+    ├── integration/            # health, request context, migrations, catalogue schema + repositories (db)
     └── security/               # CORS, outbound network blocked
 ```
 
@@ -173,6 +179,8 @@ Supabase PostgreSQL + Alembic. Every table in `public` gets `ENABLE ROW LEVEL SE
 | `referral_clicks` | Basic click analytics (no personal data) |
 
 Use unique constraints, foreign keys, and indexes for product slug, SKU/source ID, category, and searchable fields. ✅ = created by `002_catalogue_schema`.
+
+**Catalogue upserts** (`repositories/`, OR-012): `INSERT ... ON CONFLICT (source_id) DO UPDATE ... WHERE` the source-owned fields (`sku`, `name`, `description`, `price_pkr`, `source_url`) differ; `xmax = 0` in `RETURNING` tells created from updated. With no field change only `last_synced_at` moves; `updated_at` moves only when a field, image or category link changed. A sync never overwrites `slug`, `is_visible` or `is_featured`. Images are replaced only when the ordered list differs. Unknown category ids are skipped and reported, never created. Category parents are linked in a second pass, so record order cannot violate the foreign key. Only one sync may run at a time: `catalogue_sync_lock` takes a PostgreSQL advisory lock on its own connection and raises `SyncAlreadyRunningError` otherwise.
 
 **Slugs** (`services/slugs.py`): `slugify(name)`; when another source row already holds it, append `-{slugify(source_id)}`. Source ids are unique, so the result does not depend on sync order. A numeric suffix is a last resort. Truncated to 200 characters with the suffix kept. Avoid storing customer personal data unless a feature genuinely requires it.
 
