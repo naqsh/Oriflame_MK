@@ -44,6 +44,8 @@ POSTGRES_URL=postgresql://postgres.<project-ref>:<password>@aws-0-<region>.poole
 - Scheme normalised for SQLAlchemy: `postgres://` / `postgresql://` → `postgresql+psycopg://`.
 - `sslmode=require` enforced when the host is a Supabase host.
 - Missing or malformed `POSTGRES_URL` fails startup with a message that never includes the URL.
+- Port `6543` (transaction pooler) is rejected at startup.
+- Implemented in `backend/app/core/config.py` (`normalise_postgres_url`, `load_settings` → `ConfigurationError`).
 
 ---
 

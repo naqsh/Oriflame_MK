@@ -13,7 +13,7 @@
 - [x] OR-001: integration branch `epic/autonomus-implementation` created from `origin/main` and pushed
 - [x] OR-001: local branch `epic/E1-project-scaffold` created (the user commits and pushes it by hand)
 - [x] OR-001: `.env.example`, `.nvmrc` (Node 24), `pyproject.toml` + `uv.lock` (ruff, mypy strict, pytest)
-- [ ] OR-002: typed settings and ConfigProvider
+- [x] OR-002: `backend/app/core/config.py` holds `Settings`, `ReferralConfig`, `ConfigProvider`, `EnvConfigProvider` and `get_config_provider`. The referral allow-list is `pk.oriflame.com` only (owner-confirmed). 28 unit tests are in `backend/tests/unit/test_config.py`.
 - [ ] OR-003 onward: see `docs/jira-tickets-json/OR-E1-mvp1-scaffold.json`
 
 ### Assumptions

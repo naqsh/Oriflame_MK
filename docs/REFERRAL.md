@@ -32,6 +32,23 @@ ORIFLAME_REFERRAL_METHOD=official_url
 | `ORIFLAME_REFERRAL_URL` | Official referral URL supplied/approved by Oriflame |
 | `ORIFLAME_REFERRAL_METHOD` | `official_url` (redirect to referral URL) or `manual_code` (instruct visitor to enter code at checkout) |
 
+### Allowed referral hosts
+
+`ORIFLAME_REFERRAL_URL` must use `https` and its host must exactly match an entry in `ALLOWED_REFERRAL_HOSTS` (`backend/app/core/config.py`). Confirmed with the owner (October 2026):
+
+| Host | Notes |
+|---|---|
+| `pk.oriflame.com` | Oriflame Pakistan, the only allowed host |
+
+Subdomain wildcards are not allowed, and neither are URLs with embedded credentials. Adding a host is a code change plus an update to this table, made only after the owner confirms it.
+
+### Validation (OR-002)
+
+- `Settings` (Pydantic Settings) loads the variables once; services read them through `ConfigProvider.get_referral_config()` and never from `os.environ`.
+- Empty `ORIFLAME_CONSULTANT_CODE` / `ORIFLAME_REFERRAL_URL` are treated as unset. Startup still succeeds, and `ReferralConfig.is_configured` reports `False`.
+- `ORIFLAME_REFERRAL_METHOD=manual_code` without `ORIFLAME_CONSULTANT_CODE` fails at startup, and so does an unknown method.
+- The consultant code is a `SecretStr`, so it never appears in a repr, a log or a `model_dump`.
+
 ---
 
 ## Requirements

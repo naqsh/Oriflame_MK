@@ -31,7 +31,7 @@ Use compatible stable releases and **record the pinned versions here** when MVP 
 |---|---|---|
 | Python | 3.12+ | Managed by `uv` |
 | FastAPI | _pin at scaffold_ | |
-| Pydantic / pydantic-settings | 2.x | |
+| Pydantic / pydantic-settings | pydantic 2.14.1 / pydantic-settings 2.16.1 | mypy runs the `pydantic.mypy` plugin |
 | SQLAlchemy | 2.x | Typed declarative models |
 | Alembic | _pin at scaffold_ | |
 | psycopg | 3.x | `POSTGRES_URL` normalised to `postgresql+psycopg://`; `sslmode=require` for Supabase |
