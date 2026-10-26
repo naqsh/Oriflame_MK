@@ -1,0 +1,92 @@
+{
+  "OR-E6": [
+    {
+      "Issue id": "OR-E6",
+      "Summary": "MVP 6: Admin & Hardening",
+      "Issue Type": "Epic",
+      "Description": "Add the protected admin area and harden the application for production: authentication, audit logging, sync and referral status views, security headers, rate limits, end-to-end tests, and deployment readiness. Closes the MVP against its acceptance criteria.\n\nSCOPE:\n- Admin authentication and authorisation (ADR-003)\n- audit_logs for meaningful admin actions\n- Catalogue sync status and manual sync trigger\n- Product visibility/featured selection (if required by owner)\n- Referral configuration status (read-only) and basic click analytics\n- Secure headers, narrow CORS verification, rate limits\n- Playwright end-to-end tests for critical journeys and admin protection\n- Deployment gates, production env template, deployment documentation\n- Final MVP acceptance review\n\nOUT OF SCOPE:\n- Editable referral settings persisted in a database (unless explicitly requested)\n- Multi-tenancy, vendor management, billing\n- Checkout/payment integration\n\nREFERENCE DOCS:\n- docs/SECURITY.md\n- docs/REFERRAL.md (Admin Visibility)\n- docs/DEPLOYMENT-GATES.md\n- infrastructure/AGENT.md, infrastructure/DEPLOYMENT.md\n- docs/PLAN.md (MVP Acceptance Criteria)\n\nSUCCESS CRITERIA:\n- All admin endpoints and pages reject unauthenticated and unauthorised access\n- Admin actions are audit-logged\n- Referral configuration shown as status with explanation that changes are made via deployment environment settings\n- Security headers present; CORS narrow; rate limits active on login, search, and handoff\n- Playwright critical journey and admin-protection specs pass in CI\n- Every item in docs/PLAN.md MVP Acceptance Criteria checked with evidence\n- Backend and frontend gates pass; all deployment gates pass",
+      "Labels": "mvp6,admin,security",
+      "Parent": ""
+    },
+    {
+      "Issue id": "OR-044",
+      "Summary": "Admin authentication (ADR-003) and admin users",
+      "Issue Type": "Task",
+      "Description": "Choose and implement admin authentication.\n\nIMPLEMENTATION DETAILS:\n- docs/adr/ADR-003-admin-authentication.md: compare session cookie vs JWT vs external IdP for a single-owner admin; record decision\n- If password-based: admin_users table (id, email unique, password_hash argon2/bcrypt, is_active, created_at, last_login_at) + migration (RLS enabled, no policies — Supabase Data API lockdown per docs/DATABASE.md); CLI command to create the first admin (no default credentials, no seeded passwords)\n- POST /api/v1/admin/login, POST /api/v1/admin/logout; HttpOnly, Secure, SameSite=Strict session cookie; session expiry\n- Frontend /admin/login page (Zod + React Hook Form); admin pages excluded from sitemap and set noindex\n\nEFFORT: L (8 hours)\nPROJECT AREA: Backend / Frontend / Security\nDEPENDENCIES: OR-E1\n\nTESTING CRITERIA:\n- Valid login sets cookie; invalid credentials return generic error\n- Passwords stored only as hashes; no credentials in logs or fixtures\n- Session expires and logout invalidates it\n\nEDGE CASES:\n- Brute force: login rate limited per IP and per account with temporary lockout\n- Inactive admin cannot log in\n- No admin exists yet: admin area shows setup instruction (CLI), never an open registration page",
+      "Labels": "admin,auth,security,adr",
+      "Parent": "OR-E6"
+    },
+    {
+      "Issue id": "OR-045",
+      "Summary": "Admin authorisation dependency and CSRF protection",
+      "Issue Type": "Task",
+      "Description": "Guarantee no admin route is publicly accessible.\n\nIMPLEMENTATION DETAILS:\n- core/security.py: require_admin dependency applied at the admin router level (not per endpoint) so new endpoints inherit protection\n- CSRF protection for state-changing admin requests (double-submit token or SameSite=Strict + Origin check, per ADR-003)\n- Next.js middleware redirecting unauthenticated /admin/* requests to /admin/login; server-side check repeated in admin data fetching\n\nEFFORT: M (4 hours)\nPROJECT AREA: Backend / Frontend / Security\nDEPENDENCIES: OR-044\n\nTESTING CRITERIA:\n- tests/security/test_admin_access.py: every route under /api/v1/admin returns 401/403 without a valid session (enumerated from the router so new routes are covered automatically)\n- State-changing request without CSRF token/valid Origin rejected\n\nEDGE CASES:\n- Expired session mid-action: 401 and redirect to login, no partial action\n- Admin API reached directly bypassing Next.js: still protected by backend dependency",
+      "Labels": "admin,authz,security",
+      "Parent": "OR-E6"
+    },
+    {
+      "Issue id": "OR-046",
+      "Summary": "Audit logging for admin actions",
+      "Issue Type": "Task",
+      "Description": "Record meaningful admin actions.\n\nIMPLEMENTATION DETAILS:\n- audit_logs table (id, occurred_at, admin_user_id, action, target_type, target_id, details JSON without secrets) + migration (RLS enabled, no policies — Supabase Data API lockdown per docs/DATABASE.md)\n- services/audit.py: record(action, ...) called by admin services (login, logout, manual sync, visibility/featured changes)\n- Admin page listing recent audit entries (paginated)\n\nEFFORT: S (3 hours)\nPROJECT AREA: Backend / Frontend\nDEPENDENCIES: OR-045\n\nTESTING CRITERIA:\n- Each admin action produces exactly one audit row\n- details never contain passwords, session tokens, or the consultant code\n\nEDGE CASES:\n- Audit write failure on a state-changing action: action rolled back (same transaction) rather than unaudited\n- Failed login attempts logged without storing the attempted password",
+      "Labels": "admin,audit,security",
+      "Parent": "OR-E6"
+    },
+    {
+      "Issue id": "OR-047",
+      "Summary": "Catalogue sync status and manual sync trigger",
+      "Issue Type": "Task",
+      "Description": "Let the admin see sync health and start a sync.\n\nIMPLEMENTATION DETAILS:\n- GET /api/v1/admin/sync-runs (paginated, newest first) and POST /api/v1/admin/sync (starts CatalogueSyncService in a background task; returns run id)\n- Admin page: last successful sync age, latest runs with status and counts, error detail, 'Run sync now' button with confirmation\n- Audit-logged\n\nEFFORT: M (4 hours)\nPROJECT AREA: Backend / Frontend\nDEPENDENCIES: OR-046, OR-E2\n\nTESTING CRITERIA:\n- Manual trigger creates a run and reports completion status when polled\n- Trigger while a run is in progress returns 409 with clear message\n\nEDGE CASES:\n- Fixture source selected in production: trigger refused\n- Process restart during a run: stale run marked failed on next trigger (OR-014 recovery)",
+      "Labels": "admin,catalogue",
+      "Parent": "OR-E6"
+    },
+    {
+      "Issue id": "OR-048",
+      "Summary": "Product visibility and featured selection (if required)",
+      "Issue Type": "Task",
+      "Description": "Allow the owner to hide products or feature them on the homepage — only if the owner confirms it is required.\n\nIMPLEMENTATION DETAILS:\n- Confirm requirement with owner; if not required, close task as 'not needed' with note in todo.md\n- PATCH /api/v1/admin/products/{slug} accepting is_visible and is_featured only\n- Admin product table with search, toggles, and pagination\n- Sync must not overwrite owner-set visibility/featured flags (document precedence)\n- Audit-logged; affected pages revalidated\n\nEFFORT: M (4 hours)\nPROJECT AREA: Backend / Frontend\nDEPENDENCIES: OR-046\n\nTESTING CRITERIA:\n- Toggle reflected on storefront after revalidation\n- Subsequent sync preserves owner flags\n- Request with other fields (price, name) rejected (422)\n\nEDGE CASES:\n- Admin cannot edit product facts (name, price, availability) — sourced data stays authoritative\n- Featuring a hidden product: rejected or auto-unfeatured with message",
+      "Labels": "admin,catalogue",
+      "Parent": "OR-E6"
+    },
+    {
+      "Issue id": "OR-049",
+      "Summary": "Referral configuration status and click analytics",
+      "Issue Type": "Task",
+      "Description": "Show referral setup health and basic click analytics without a misleading edit form.\n\nIMPLEMENTATION DETAILS:\n- GET /api/v1/admin/referral-status: ReferralService.status() (method, configured/not_configured/invalid, referral host) — never returns the full code (masked, e.g. last 2 characters) unless ADR-002 marks it public\n- GET /api/v1/admin/referral-clicks?from=&to=: daily counts by method and origin\n- Admin page: status card with text 'Referral settings are managed through deployment environment settings' and link to infrastructure/DEPLOYMENT.md guidance; simple daily chart/table\n- No editable referral form\n\nEFFORT: M (4 hours)\nPROJECT AREA: Backend / Frontend\nDEPENDENCIES: OR-045, OR-E4\n\nTESTING CRITERIA:\n- Status correct for configured, missing, and invalid-host settings\n- Code masked in response; analytics totals match stored clicks\n\nEDGE CASES:\n- Date range too large: bounded (e.g. 366 days)\n- Analytics labelled 'handoff clicks' — never 'sales' or 'conversions'",
+      "Labels": "admin,referral,analytics",
+      "Parent": "OR-E6"
+    },
+    {
+      "Issue id": "OR-050",
+      "Summary": "Security headers, CORS verification, and rate limits",
+      "Issue Type": "Task",
+      "Description": "Harden HTTP behaviour across frontend and backend.\n\nIMPLEMENTATION DETAILS:\n- Next.js headers(): Content-Security-Policy (self + authorised image hosts; no unsafe-inline scripts beyond JSON-LD handled via nonce or hashed), Strict-Transport-Security, X-Content-Type-Options nosniff, Referrer-Policy strict-origin-when-cross-origin, Permissions-Policy, frame-ancestors 'none'\n- Backend security headers middleware for API responses\n- Rate limiting (in-process limiter acceptable for single instance; document Redis upgrade path only if multi-instance) on login, search, handoff, contact form\n- Verify CORS_ORIGINS in production contains only the site origin\n\nEFFORT: M (5 hours)\nPROJECT AREA: Backend / Frontend / Security\nDEPENDENCIES: OR-044\n\nTESTING CRITERIA:\n- tests/security/test_headers_cors.py: headers present; disallowed origin gets no CORS headers\n- Rate limit returns 429 after threshold with Retry-After\n- CSP does not break pages (Playwright smoke passes with CSP enabled)\n\nEDGE CASES:\n- Proxy/CDN in front: client IP derived only from trusted proxy headers (configurable), not spoofable X-Forwarded-For\n- Do not add Redis unless multi-instance deployment requires it (ask first)",
+      "Labels": "security,hardening",
+      "Parent": "OR-E6"
+    },
+    {
+      "Issue id": "OR-051",
+      "Summary": "Playwright end-to-end tests for critical journeys",
+      "Issue Type": "Task",
+      "Description": "Prove the main customer journeys and admin protection work end to end.\n\nIMPLEMENTATION DETAILS:\n- e2e/browse-to-handoff.spec.ts: homepage -> category -> product detail -> add to list -> list -> 'Buy from Oriflame' (official_url mode asserts navigation target host; manual_code mode asserts instructions and copy action)\n- e2e/search.spec.ts: search returns results and handles no results\n- e2e/admin-protection.spec.ts: /admin redirects to login; login works with test admin created by CLI in setup; logout\n- e2e/accessibility.spec.ts: axe checks on key templates (if @axe-core/playwright is approved as a dependency)\n- Run against development fixtures and test referral config; CI job enabled\n\nEFFORT: M (6 hours)\nPROJECT AREA: Testing\nDEPENDENCIES: OR-047, OR-049, OR-050\n\nTESTING CRITERIA:\n- All specs pass locally and in CI; traces kept on failure\n\nEDGE CASES:\n- Tests never navigate to the real Oriflame site (intercept outbound navigation and assert URL)\n- Test admin credentials generated per run, never committed",
+      "Labels": "testing,e2e",
+      "Parent": "OR-E6"
+    },
+    {
+      "Issue id": "OR-052",
+      "Summary": "Deployment readiness: gates, production env template, deployment docs",
+      "Issue Type": "Task",
+      "Description": "Make the application deployable with documented, verifiable steps.\n\nIMPLEMENTATION DETAILS:\n- docs/adr/ADR-004-deployment-target.md: chosen hosting for Next.js and FastAPI (database is a separate production Supabase project) (ask before any paid service)\n- .env.production.example documenting every production variable with empty values\n- Implement automated checks for docs/DEPLOYMENT-GATES.md gates in CI (migrations on fresh DB, audits, fixture block, admin protection, SEO artefacts)\n- infrastructure/DEPLOYMENT.md: exact deploy, migrate, rollback, and referral-config update steps for the chosen target\n- Health/readiness endpoints wired to the platform's health checks\n\nEFFORT: M (6 hours)\nPROJECT AREA: Infrastructure / Docs\nDEPENDENCIES: OR-051\n\nTESTING CRITERIA:\n- Fresh deployment to a non-production environment following the docs succeeds (evidence in todo.md Review)\n- Rollback procedure exercised once\n\nEDGE CASES:\n- Missing production variable: deploy fails at startup validation, not at first request\n- Migration failure: deployment halts before switching traffic",
+      "Labels": "deployment,infrastructure,adr",
+      "Parent": "OR-E6"
+    },
+    {
+      "Issue id": "OR-053",
+      "Summary": "MVP acceptance review",
+      "Issue Type": "Task",
+      "Description": "Verify every MVP acceptance criterion with evidence before declaring the MVP complete.\n\nIMPLEMENTATION DETAILS:\n- Walk through docs/PLAN.md MVP Acceptance Criteria; for each, attach evidence (command output, test name, screenshot, or link) in docs/tasks/todo.md Review\n- Confirm: no committed secrets (git history scan), no NEXT_PUBLIC consultant code, no fabricated data, no attribution or live-availability claims, independence disclaimer present\n- Confirm multi-tenant readiness: configuration flows through ConfigProvider; no tenant assumptions hardcoded in catalogue or referral services\n- Update README status, AGENT.md MVP overview, docs/PLAN.md statuses, docs/tasks/lessons.md, and checkpoint\n\nEFFORT: M (4 hours)\nPROJECT AREA: QA / Docs\nDEPENDENCIES: OR-044 through OR-052\n\nTESTING CRITERIA:\n- Every acceptance criterion checked with linked evidence; any unmet criterion has an open task\n- Backend and frontend gates and all deployment gates pass on the final commit\n\nEDGE CASES:\n- A criterion cannot be verified (e.g. owner has not confirmed referral mechanism): MVP marked complete-with-exceptions, exception listed explicitly — never claimed as passed",
+      "Labels": "qa,acceptance,docs",
+      "Parent": "OR-E6"
+    }
+  ]
+}

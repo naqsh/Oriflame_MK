@@ -1,0 +1,53 @@
+# --- Secrets & local environment (never commit) ---
+.env
+.env.*
+!.env.example
+!.env.production.example
+*.pem
+*.key
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+*.egg-info/
+dist/
+build/
+
+# --- Node / Next.js ---
+node_modules/
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+npm-debug.log*
+coverage/
+
+# --- Playwright ---
+playwright-report/
+test-results/
+blob-report/
+playwright/.cache/
+
+# --- Supabase CLI (local dev stack) ---
+supabase/.branches/
+supabase/.temp/
+
+# --- Claude Code personal settings ---
+.claude/settings.local.json
+
+# --- Logs & OS / editor files ---
+logs/
+*.log
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

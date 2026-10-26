@@ -1,0 +1,68 @@
+{
+  "OR-E4": [
+    {
+      "Issue id": "OR-E4",
+      "Summary": "MVP 4: Referral Handoff",
+      "Issue Type": "Epic",
+      "Description": "Implement the 'Buy from Oriflame' handoff through a single server-side ReferralService that uses only an official referral URL or a documented manual-code mechanism, plus basic click analytics.\n\nSCOPE:\n- ReferralService resolving official_url / manual_code / unavailable from configuration\n- Referral host allow-list confirmed with the owner (ADR-002)\n- referral_clicks storage without personal data\n- Handoff API endpoint\n- BuyFromOriflame and CopyReferralCode components on PDP and shopping list\n- Referral / how-to-buy page\n\nOUT OF SCOPE:\n- Admin-editable referral settings or a settings database (status view only, OR-E6)\n- Any claim of attributed sales\n- On-site checkout or payment\n\nREFERENCE DOCS:\n- docs/REFERRAL.md\n- backend/AGENT.md (Referral Service)\n- docs/SECURITY.md (Referral Open-Redirect Prevention)\n\nSUCCESS CRITERIA:\n- Referral configuration is read only from server-side environment variables\n- The handoff uses a validated, configured official referral destination or provides manual-code instructions with a copy action\n- No referral URL is constructed in UI components; client never supplies the destination\n- Consultant code never appears in client bundles or NEXT_PUBLIC_ variables unless confirmed intentionally public\n- No UI or API text claims a sale was attributed\n- Backend and frontend gates pass",
+      "Labels": "mvp4,referral",
+      "Parent": ""
+    },
+    {
+      "Issue id": "OR-029",
+      "Summary": "Confirm referral mechanism and record ADR-002",
+      "Issue Type": "Task",
+      "Description": "Confirm with the owner how Oriflame Pakistan attributes referrals before coding the handoff.\n\nIMPLEMENTATION DETAILS:\n- Confirm: official referral URL format supplied by Oriflame, or manual consultant-code entry at checkout, or both\n- Confirm the exact official hosts permitted as referral destinations\n- docs/adr/ADR-002-referral-method.md: decision, allowed hosts, whether the consultant code may be shown publicly (required for manual_code), evidence source\n- Update the allow-list constant introduced in OR-002 and docs/REFERRAL.md\n\nEFFORT: S (2 hours, plus owner response time)\nPROJECT AREA: Docs / Research\nDEPENDENCIES: OR-002\n\nTESTING CRITERIA:\n- ADR-002 indexed; allow-list in code matches ADR exactly\n\nEDGE CASES:\n- Mechanism unconfirmed: ADR Proposed; handoff ships in 'unavailable' mode with generic link to the official site homepage only if the owner approves, otherwise instructions only\n- Never assume that appending a consultant code to an arbitrary URL creates attribution",
+      "Labels": "referral,adr",
+      "Parent": "OR-E4"
+    },
+    {
+      "Issue id": "OR-030",
+      "Summary": "ReferralService",
+      "Issue Type": "Task",
+      "Description": "Centralise all referral logic in one server-side service.\n\nIMPLEMENTATION DETAILS:\n- backend/app/services/referral.py: ReferralService(config_provider).resolve() -> ReferralHandoff discriminated union: OfficialUrlHandoff(url), ManualCodeHandoff(code, instructions, checkout_url optional), UnavailableHandoff(reason)\n- Re-validates https scheme and allow-listed host at resolve time (defence in depth)\n- status() -> configured / not_configured / invalid for admin use (OR-E6), never returning the raw code\n- Instruction text centralised (no attribution claims)\n\nEFFORT: M (4 hours)\nPROJECT AREA: Backend\nDEPENDENCIES: OR-029\n\nTESTING CRITERIA:\n- official_url with valid config returns URL; invalid host returns Unavailable\n- manual_code returns code and instructions\n- Missing config returns Unavailable with reason not_configured\n- Single-vendor configuration test: service obtains config only via ConfigProvider\n\nEDGE CASES:\n- Config changes between requests (restart): no cached stale handoff beyond settings lifecycle\n- Referral URL with credentials, fragments, or non-default port: rejected\n- Instruction text must not state or imply guaranteed attribution",
+      "Labels": "referral,backend,service",
+      "Parent": "OR-E4"
+    },
+    {
+      "Issue id": "OR-031",
+      "Summary": "Referral click storage",
+      "Issue Type": "Task",
+      "Description": "Record handoff clicks for basic analytics without personal data.\n\nIMPLEMENTATION DETAILS:\n- Model ReferralClick (id, occurred_at, method official_url/manual_code/unavailable, origin pdp/list/referral_page, product_slug nullable, item_count) — no IP, user agent, or identifiers\n- Alembic migration with index on occurred_at (RLS enabled, no policies — Supabase Data API lockdown per docs/DATABASE.md)\n- repositories/referral_clicks.py: record(), daily_counts(range)\n\nEFFORT: S (3 hours)\nPROJECT AREA: Backend / Database\nDEPENDENCIES: OR-030\n\nTESTING CRITERIA:\n- Migration reversible; no drift\n- daily_counts aggregates correctly across days\n- Schema review confirms no personal data columns\n\nEDGE CASES:\n- Click recording failure must not block the handoff (log and continue)\n- Bot traffic: excluded via simple user-agent heuristic at request time (not stored) or documented as a known limitation",
+      "Labels": "referral,analytics,database",
+      "Parent": "OR-E4"
+    },
+    {
+      "Issue id": "OR-032",
+      "Summary": "Handoff API endpoint",
+      "Issue Type": "Task",
+      "Description": "Expose the resolved handoff to the frontend.\n\nIMPLEMENTATION DETAILS:\n- POST /api/v1/referral/handoff with body {origin, product_slug?, item_count} (no destination field accepted)\n- Calls ReferralService.resolve(), records a click, returns the typed handoff union\n- Rate limited; extra='forbid' request model\n- Response Cache-Control: no-store\n\nEFFORT: S (3 hours)\nPROJECT AREA: Backend\nDEPENDENCIES: OR-030, OR-031\n\nTESTING CRITERIA:\n- Each handoff variant returned correctly\n- Body containing a 'url' or 'destination' field rejected (422)\n- Click recorded per call; failure to record still returns handoff\n\nEDGE CASES:\n- Unknown product_slug: accepted for analytics as null, not an error that blocks buying\n- item_count bounded (0–200)",
+      "Labels": "referral,backend,api",
+      "Parent": "OR-E4"
+    },
+    {
+      "Issue id": "OR-033",
+      "Summary": "BuyFromOriflame and CopyReferralCode components",
+      "Issue Type": "Task",
+      "Description": "Render the handoff in the UI using only server-resolved data.\n\nIMPLEMENTATION DETAILS:\n- components/referral/BuyFromOriflame (Client Component): calls the handoff endpoint on click; for official_url opens the returned URL (rel='noopener noreferrer'); for manual_code opens an accessible dialog with instructions and CopyReferralCode; for unavailable shows a calm explanation\n- CopyReferralCode: copies via Clipboard API with fallback selection; announces success to screen readers\n- Wired into PDP (OR-025) and shopping list (OR-027)\n- Text: checkout and fulfilment happen on Oriflame's official platform\n\nEFFORT: M (5 hours)\nPROJECT AREA: Frontend\nDEPENDENCIES: OR-032, OR-025, OR-027\n\nTESTING CRITERIA:\n- Vitest: each variant renders correctly; copy action works and is keyboard-accessible\n- Static check: no referral URL string or consultant code in frontend source or build output\n- Dialog traps focus and closes with Escape\n\nEDGE CASES:\n- Clipboard permission denied: code shown selected with 'press Ctrl+C' hint\n- Pop-up blocked: fall back to same-tab navigation link\n- Network error calling handoff: retry option, no guessed URL",
+      "Labels": "referral,frontend,components",
+      "Parent": "OR-E4"
+    },
+    {
+      "Issue id": "OR-034",
+      "Summary": "Referral / how-to-buy page",
+      "Issue Type": "Task",
+      "Description": "Explain clearly how buying through Oriflame works.\n\nIMPLEMENTATION DETAILS:\n- app/referral/page.tsx: steps (shortlist here, continue on official Oriflame, enter code if required, checkout and delivery handled by Oriflame), BuyFromOriflame CTA, independence disclaimer, short FAQ placeholder for OR-E5 content\n- Copy reviewed by owner before launch\n\nEFFORT: S (3 hours)\nPROJECT AREA: Frontend / Content\nDEPENDENCIES: OR-033\n\nTESTING CRITERIA:\n- Page renders each handoff mode's instructions correctly\n- Headings hierarchy valid; one h1\n\nEDGE CASES:\n- No wording promising discounts, attribution, delivery times, or official endorsement unless confirmed by owner/Oriflame",
+      "Labels": "referral,frontend,content",
+      "Parent": "OR-E4"
+    },
+    {
+      "Issue id": "OR-035",
+      "Summary": "Documentation sync for referral handoff",
+      "Issue Type": "Task",
+      "Description": "Align documentation with the implemented referral flow.\n\nIMPLEMENTATION DETAILS:\n- docs/REFERRAL.md: final flow, allow-list, ADR-002 link, analytics fields\n- docs/example-code/referral-service-pattern.py and settings-pattern.py\n- .env.example and infrastructure/DEPLOYMENT.md verified\n- docs/PLAN.md OR-E4 rows complete; todo.md Review with evidence\n\nEFFORT: S (2 hours)\nPROJECT AREA: Docs\nDEPENDENCIES: OR-029 through OR-034\n\nTESTING CRITERIA:\n- Docs and code allow-lists identical; links resolve\n\nEDGE CASES:\n- If ADR-002 is still Proposed, docs state the handoff is in restricted mode",
+      "Labels": "docs",
+      "Parent": "OR-E4"
+    }
+  ]
+}

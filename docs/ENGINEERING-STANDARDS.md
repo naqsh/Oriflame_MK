@@ -1,0 +1,141 @@
+# Engineering Standards — Oriflame Pakistan Referral Store
+
+**Version:** 0.1.0 | **Last Updated:** October 2026
+
+---
+
+## Twelve-Factor App Compliance
+
+| Factor | Application |
+|---|---|
+| Codebase | One repo: `backend/`, `frontend/`, `infrastructure/`, `docs/` |
+| Dependencies | Declared and locked (`uv.lock`, `package-lock.json`) |
+| Config | Environment variables via Pydantic Settings; never in source |
+| Backing services | Supabase PostgreSQL attached via `POSTGRES_URL` |
+| Build, release, run | CI builds; migrations applied as a release step |
+| Processes | Stateless API processes |
+| Port binding | uvicorn (backend), Next.js server (frontend) |
+| Dev/prod parity | PostgreSQL in all environments — Supabase for dev/prod, PostgreSQL container or local Supabase for tests (no SQLite substitute) |
+| Logs | Structured JSON to stdout |
+| Admin processes | Alembic migrations and catalogue sync run as one-off commands/endpoints |
+
+---
+
+## Technology Stack & Versions
+
+Use compatible stable releases and **record the pinned versions here** when MVP 1 is scaffolded.
+
+### Backend (Python)
+
+| Package | Version | Notes |
+|---|---|---|
+| Python | 3.12+ | Managed by `uv` |
+| FastAPI | _pin at scaffold_ | |
+| Pydantic / pydantic-settings | 2.x | |
+| SQLAlchemy | 2.x | Typed declarative models |
+| Alembic | _pin at scaffold_ | |
+| psycopg | 3.x | `POSTGRES_URL` normalised to `postgresql+psycopg://`; `sslmode=require` for Supabase |
+| httpx | _pin at scaffold_ | Explicit timeouts |
+| structlog | _pin at scaffold_ | |
+| pytest / pytest-cov | _pin at scaffold_ | |
+| ruff / mypy | _pin at scaffold_ | |
+
+### Frontend (TypeScript)
+
+| Package | Version | Notes |
+|---|---|---|
+| Next.js | _pin at scaffold_ | App Router only |
+| React | _pin at scaffold_ | |
+| TypeScript | 5.x | `strict: true` |
+| Tailwind CSS | _pin at scaffold_ | |
+| shadcn/ui | — | Where useful |
+| Zod | _pin at scaffold_ | |
+| React Hook Form | _pin at scaffold_ | Where appropriate |
+| Vitest / Testing Library / Playwright | _pin at scaffold_ | |
+
+### Infrastructure
+
+| Component | Version |
+|---|---|
+| Database | Supabase (managed PostgreSQL; version per project — check Dashboard → Settings → Infrastructure) |
+| Test database | PostgreSQL matching the Supabase major version (container or `supabase start`) |
+| Node.js | LTS (pinned in `.nvmrc`) |
+| Redis / background jobs | Not used unless justified by actual requirements |
+
+---
+
+## Configuration Management
+
+### Environment Variables
+
+```dotenv
+# .env.example — Document all required variables
+
+# Backend
+POSTGRES_URL=postgresql://postgres.<project-ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres
+APP_ENV=development
+CORS_ORIGINS=http://localhost:3000
+
+# Referral configuration — replace with real, approved values
+ORIFLAME_COUNTRY=PK
+ORIFLAME_CONSULTANT_CODE=
+ORIFLAME_REFERRAL_URL=
+ORIFLAME_REFERRAL_METHOD=official_url
+
+# Tests only — local PostgreSQL, never the Supabase project
+TEST_POSTGRES_URL=postgresql://postgres:postgres@localhost:54322/postgres
+```
+
+Rules:
+
+- `POSTGRES_URL` is the Supabase connection string (session pooler or direct, port 5432). See `docs/DATABASE.md`.
+
+- Commit `.env.example` only; `.env`, local secrets, and generated files are in `.gitignore`.
+- Private values never use a `NEXT_PUBLIC_` prefix.
+- New variables are added to `.env.example`, this file (or `docs/REFERRAL.md`), and `infrastructure/DEPLOYMENT.md` in the same change.
+
+### Pydantic Settings Validation
+
+- One typed `Settings` class in `backend/app/core/config.py`, validated once at startup.
+- `POSTGRES_URL` is a required `SecretStr`; scheme normalised to `postgresql+psycopg://`; never logged.
+- `ORIFLAME_REFERRAL_METHOD` is a `Literal["official_url", "manual_code"]`.
+- `ORIFLAME_REFERRAL_URL` is validated as HTTPS with an allow-listed official Oriflame host.
+- Settings are consumed through a `ConfigProvider` interface (env provider for the MVP).
+
+---
+
+## Code Quality Standards
+
+### Python
+
+- `ruff check`, `ruff format`, and `mypy` must pass with zero errors.
+- Modern type hints (`X | None`, built-in generics); full annotations on public functions.
+- Imports: stdlib → third party → local; module-level only.
+- Pydantic v2 patterns only (`model_config = ConfigDict(...)`, `field_validator`, `model_validator`).
+- Catch specific exceptions; never bare `except` or generic `Exception`.
+- Functions >50 lines are split; similar code in 3+ places is extracted.
+
+### TypeScript
+
+- `strict: true`, `noImplicitAny`, `noUncheckedIndexedAccess`.
+- ESLint + `tsc --noEmit` pass with zero errors.
+- Zod schemas are the source of truth for API types (`z.infer`).
+- Server Components by default; `"use client"` only where interactive.
+
+### Database
+
+- Every schema change ships with an Alembic migration.
+- Unique constraints, foreign keys, and indexes on slug, SKU/source id, category, and searchable fields.
+- No customer personal data unless a feature genuinely requires it.
+
+---
+
+## Git & Review
+
+- Conventional, descriptive commit messages.
+- PRs use `.github/pull_request_template.md`; CI must be green before merge.
+- Branch policy: `docs/EXECUTION-RULES.md` §9.
+
+---
+
+*Engineering Standards — Version 0.1.0 — October 2026*

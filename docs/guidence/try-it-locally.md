@@ -1,0 +1,94 @@
+# Try It Locally — Oriflame Pakistan Referral Store
+
+**Version:** 0.1.0 | **Last Updated:** October 2026
+
+> Commands below are the target workflow. Update this guide with exact commands and versions when MVP 1 is scaffolded.
+
+---
+
+## Prerequisites
+
+| Tool | Purpose |
+|---|---|
+| Python 3.12+ and `uv` | Backend |
+| Node.js LTS and `npm` | Frontend |
+| Supabase project | Database (managed PostgreSQL) — free tier is fine for development |
+| Docker or Supabase CLI (optional) | Local PostgreSQL for running tests (`TEST_POSTGRES_URL`) |
+| Git | Version control |
+
+---
+
+## 1. Configure Environment
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env`:
+
+```dotenv
+POSTGRES_URL=postgresql://postgres.<project-ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres
+APP_ENV=development
+CORS_ORIGINS=http://localhost:3000
+
+ORIFLAME_COUNTRY=PK
+ORIFLAME_CONSULTANT_CODE=
+ORIFLAME_REFERRAL_URL=
+ORIFLAME_REFERRAL_METHOD=official_url
+```
+
+Leave referral values empty locally unless you have real, approved values. Never commit `.env`.
+
+---
+
+## 2. Connect the Supabase Database
+
+1. Create (or open) a Supabase project for development.
+2. Dashboard → **Connect** → copy the **Session pooler** connection string (port `5432`). Use the *Direct connection* string only if your network supports IPv6.
+3. Set it as `POSTGRES_URL` in `.env`, replacing `[YOUR-PASSWORD]` **including the brackets** with the database password (URL-encode special characters).
+4. Do not create tables in the Supabase Table Editor — Alembic creates the schema in step 3.
+
+For tests, point `TEST_POSTGRES_URL` at a local PostgreSQL (e.g. `supabase start` or a `postgres` Docker container), never at the Supabase project. Details: `docs/DATABASE.md`.
+
+---
+
+## 3. Backend
+
+```bash
+uv sync
+uv run alembic upgrade head
+uv run uvicorn backend.app.main:app --reload
+```
+
+API at `http://localhost:8000`; health at `/health`.
+
+---
+
+## 4. Development Catalogue (optional)
+
+Until a permitted source is configured, load the explicitly named development fixtures (command defined in MVP 2). Fixture data is never presented as live Oriflame data.
+
+---
+
+## 5. Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Site at `http://localhost:3000`.
+
+---
+
+## 6. Run Checks
+
+```bash
+uv run ruff check backend && uv run ruff format backend && uv run mypy backend && uv run pytest
+cd frontend && npm run lint && npm run typecheck && npm run test && npm run build
+```
+
+---
+
+*Try It Locally — Version 0.1.0 — October 2026*

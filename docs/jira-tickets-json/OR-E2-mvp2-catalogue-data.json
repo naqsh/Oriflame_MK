@@ -1,0 +1,77 @@
+{
+  "OR-E2": [
+    {
+      "Issue id": "OR-E2",
+      "Summary": "MVP 2: Catalogue Data",
+      "Issue Type": "Epic",
+      "Description": "Bring Oriflame Pakistan product data into the system from a permitted, reliable source (or clearly labelled development fixtures until one is confirmed), with a minimal schema, idempotent synchronisation, provenance, and failure recording.\n\nSCOPE:\n- Permitted-source investigation and ADR covering access terms and image/content rights\n- Minimal catalogue schema and Alembic migrations (no tenant tables)\n- Replaceable Oriflame source adapter isolated in backend/app/integrations/oriflame/\n- Idempotent upsert repositories keyed on stable source identifiers\n- Catalogue sync service recording every run in catalogue_sync_runs, with safe retries\n- Explicitly named development fixtures, impossible to load in production\n- Command-line sync entry point (admin trigger follows in OR-E6)\n\nOUT OF SCOPE:\n- Storefront pages and public catalogue APIs (OR-E3)\n- Admin UI (OR-E6)\n- Scraping that bypasses authentication, anti-bot systems, access restrictions, or rate limits — never in scope\n\nREFERENCE DOCS:\n- docs/CATALOGUE-DATA.md\n- backend/AGENT.md (Catalogue Integration, Initial Database Model)\n- docs/ARCHITECTURE.md\n- docs/adr/README.md\n\nSUCCESS CRITERIA:\n- ADR-001 records the chosen source, its terms, and image/content usage rights (or records that none is confirmed and fixtures are used)\n- alembic upgrade head creates the catalogue schema; downgrade is documented\n- Running sync twice against the same input yields identical row counts\n- Every imported product stores source_url and last_synced_at\n- Failed runs are recorded with error detail and can be retried safely\n- No fabricated products, SKUs, prices, ratings, reviews, or stock anywhere\n- Backend gate passes: uv run ruff check backend && uv run ruff format backend && uv run mypy backend && uv run pytest",
+      "Labels": "mvp2,catalogue",
+      "Parent": ""
+    },
+    {
+      "Issue id": "OR-010",
+      "Summary": "Investigate permitted catalogue sources and record ADR-001",
+      "Issue Type": "Task",
+      "Description": "Determine a permitted, reliable source for Oriflame Pakistan product data and images before any ingestion code is written.\n\nIMPLEMENTATION DETAILS:\n- Investigate official APIs, product feeds, and authorised exports available to the store owner (consultant tools, partner feeds)\n- Confirm with the owner: access method, terms of use, rate limits, and whether product images/descriptions may be commercially republished\n- Create docs/adr/ADR-001-catalogue-data-source.md (Status, Context, Decision, Consequences, Alternatives) and add it to the docs/adr/README.md index\n- Record: source type, fields available (id, SKU, name, description, price PKR, images, categories, variants, availability), sync cadence, authorised image hosts\n- If no permitted source is confirmed: ADR status Proposed; decision is to proceed with development fixtures only\n\nEFFORT: M (4 hours, plus owner response time)\nPROJECT AREA: Docs / Research\nDEPENDENCIES: OR-E1\n\nTESTING CRITERIA:\n- ADR-001 exists, is indexed, and states image/content rights explicitly\n- Owner confirmation (or its absence) is recorded, not assumed\n\nEDGE CASES:\n- Source requires login or is protected by anti-bot measures: do not bypass; record as rejected alternative\n- Images not licensed for reuse: decide to link out or omit images; never copy them\n- Source lacks live inventory: record that availability will be labelled 'Availability not confirmed'\n- Ask before using any paid service or API plan",
+      "Labels": "catalogue,adr,research",
+      "Parent": "OR-E2"
+    },
+    {
+      "Issue id": "OR-011",
+      "Summary": "Catalogue schema models and migration",
+      "Issue Type": "Task",
+      "Description": "Create the minimal catalogue schema with SQLAlchemy models and an Alembic migration.\n\nIMPLEMENTATION DETAILS:\n- backend/app/models/: Product (id, source_id unique, sku, slug unique, name, description, price_pkr Numeric nullable, currency default PKR, source_url, last_synced_at, is_visible default true, is_featured default false, created_at, updated_at)\n- ProductImage (product_id FK cascade, url, alt_text, position, source_url)\n- Category (id, source_id unique, slug unique, name, parent_id self-FK nullable)\n- product_categories association table (composite PK)\n- CatalogueSyncRun (id, source, started_at, finished_at, status enum running/success/failed/partial, created_count, updated_count, unchanged_count, error_count, error_detail text)\n- ProductVariant and ProductAvailability ONLY if ADR-001 confirms the source provides them; otherwise omit and note in backend/AGENT.md\n- Indexes: products.slug, products.sku, products.source_id, category membership, name search (functional lower(name) index; full-text added in OR-E3)\n- Alembic migration 002_catalogue_schema with reversible downgrade; every table gets ALTER TABLE ... ENABLE ROW LEVEL SECURITY with no policies (Supabase Data API lockdown, docs/DATABASE.md)\n\nEFFORT: M (5 hours)\nPROJECT AREA: Backend / Database\nDEPENDENCIES: OR-004, OR-010\n\nTESTING CRITERIA:\n- upgrade head then downgrade -1 then upgrade head succeeds\n- Unique constraints reject duplicate slug and duplicate source_id\n- alembic check shows no model/migration drift\n- No tenant columns or tables exist
+- Test asserts RLS is enabled on every application table in public\n\nEDGE CASES:\n- Price absent from source: price_pkr NULL, never 0 or a guessed value\n- Deleting a product cascades its images but not shared categories\n- Slug collisions between different source products: deterministic suffix strategy documented and tested",
+      "Labels": "catalogue,database,alembic",
+      "Parent": "OR-E2"
+    },
+    {
+      "Issue id": "OR-012",
+      "Summary": "Catalogue repositories with idempotent upserts",
+      "Issue Type": "Task",
+      "Description": "Implement repository functions that upsert catalogue records keyed on stable source identifiers.\n\nIMPLEMENTATION DETAILS:\n- backend/app/repositories/products.py, categories.py, sync_runs.py\n- upsert_product(record) using PostgreSQL INSERT ... ON CONFLICT (source_id) DO UPDATE; returns created/updated/unchanged outcome\n- Unchanged detection: compare relevant fields so last_synced_at updates but updated_at only changes on real change\n- Images replaced per product in one transaction (delete-then-insert or diff) without duplicates\n- Category upsert by source_id; product-category links reconciled\n- Repositories contain no HTTP or business logic\n\nEFFORT: M (6 hours)\nPROJECT AREA: Backend\nDEPENDENCIES: OR-011\n\nTESTING CRITERIA:\n- Same record upserted twice: one row, second outcome 'unchanged'\n- Changed price: outcome 'updated', price persisted\n- Image list changes reflected exactly; no duplicate images after repeated upserts\n- All queries parameterised (no string-built SQL)\n\nEDGE CASES:\n- Record missing source_id: rejected with validation error, counted as error, not inserted\n- Category referenced before it exists: created or deferred deterministically, no FK violation\n- Concurrent sync runs: second run refused (advisory lock) rather than racing",
+      "Labels": "catalogue,backend,repository",
+      "Parent": "OR-E2"
+    },
+    {
+      "Issue id": "OR-013",
+      "Summary": "Replaceable Oriflame source adapter",
+      "Issue Type": "Task",
+      "Description": "Define a source adapter interface and implement the adapter chosen in ADR-001 (or the fixture adapter only), isolated so the source can be replaced later.\n\nIMPLEMENTATION DETAILS:\n- backend/app/integrations/oriflame/client.py: CatalogueSource Protocol with iter_products() and iter_categories() yielding validated Pydantic SourceProduct / SourceCategory models\n- Permitted-source adapter (per ADR-001) using httpx with explicit timeouts, bounded retries with backoff for idempotent reads, and respect for documented rate limits\n- FixtureCatalogueSource reading explicitly named development fixture files (OR-015)\n- Source selection via settings (CATALOGUE_SOURCE=fixture|<permitted adapter name>); add to .env.example and docs\n- Map source fields to SourceProduct including source_url; never fill missing fields with invented values\n\nEFFORT: M (6 hours)\nPROJECT AREA: Backend / Integration\nDEPENDENCIES: OR-010, OR-002\n\nTESTING CRITERIA:\n- Adapter tests with mocked HTTP (respx or equivalent): parse success, timeout, 429, 5xx, malformed payload\n- Pydantic validation rejects records missing required fields\n- No test makes a real network call\n\nEDGE CASES:\n- 401/403 from source: stop the run and record failure; never attempt to bypass\n- 429: honour Retry-After within a bounded budget, then fail the run\n- Partial page failure: run marked partial with error detail\n- Unknown CATALOGUE_SOURCE value: startup validation error",
+      "Labels": "catalogue,integration",
+      "Parent": "OR-E2"
+    },
+    {
+      "Issue id": "OR-014",
+      "Summary": "Catalogue sync service with run recording and safe retries",
+      "Issue Type": "Task",
+      "Description": "Orchestrate a full sync: read from the configured source, upsert via repositories, and record the run outcome.\n\nIMPLEMENTATION DETAILS:\n- backend/app/integrations/oriflame/catalogue.py: CatalogueSyncService.run(source) creating a catalogue_sync_runs row (status running), processing categories then products, updating counts, finishing with success / partial / failed\n- Per-record errors counted and summarised in error_detail (truncated, no secrets); run continues where safe\n- Fatal errors (auth, source unreachable) end the run as failed\n- Advisory lock prevents concurrent runs\n- Stale-run recovery: runs stuck in running beyond a timeout are marked failed at next start\n- structlog events catalogue_sync_started / finished / failed\n\nEFFORT: M (6 hours)\nPROJECT AREA: Backend\nDEPENDENCIES: OR-012, OR-013\n\nTESTING CRITERIA:\n- Running the sync twice with the same fixture: identical product/category/image counts; second run all 'unchanged'\n- Simulated mid-run failure: run recorded failed/partial; rerun completes without duplicates\n- Concurrent run attempt rejected with clear message\n\nEDGE CASES:\n- Product removed from source: not hard-deleted; marked is_visible=false (or handled per ADR-001) and logged\n- Source returns zero products unexpectedly: treat as suspicious, fail the run rather than hiding the whole catalogue\n- Very large source: process in batches with bounded memory",
+      "Labels": "catalogue,sync,backend",
+      "Parent": "OR-E2"
+    },
+    {
+      "Issue id": "OR-015",
+      "Summary": "Explicitly named development fixtures",
+      "Issue Type": "Task",
+      "Description": "Provide development-only catalogue fixtures for UI work, clearly separated from real data and impossible to load in production.\n\nIMPLEMENTATION DETAILS:\n- backend/fixtures/dev_catalogue_sample.json (name must contain 'dev' and 'sample'); top-level field 'fixture_notice': 'Development fixture — not live Oriflame data'\n- Fixture products use obviously placeholder names (e.g. 'Sample Product 01'), placeholder images served locally, and no real Oriflame SKUs or prices\n- FixtureCatalogueSource refuses to load when APP_ENV=production\n- Products loaded from fixtures get source_url pointing to a local placeholder and a flag/source value 'dev_fixture' so the UI can show a 'Development data' banner\n\nEFFORT: S (3 hours)\nPROJECT AREA: Backend / Fixtures\nDEPENDENCIES: OR-013\n\nTESTING CRITERIA:\n- Loading fixtures with APP_ENV=production raises an error\n- Fixture products are distinguishable via their source value\n- Grep check: fixture file contains no real Oriflame product names, SKUs, or image URLs\n\nEDGE CASES:\n- Mixed real and fixture data in one database: fixture sync refused if real-source products exist (and vice versa) unless --force-dev is passed in development\n- Fixture file missing or malformed: clear error, no partial load",
+      "Labels": "catalogue,fixtures",
+      "Parent": "OR-E2"
+    },
+    {
+      "Issue id": "OR-016",
+      "Summary": "Catalogue sync command-line entry point",
+      "Issue Type": "Task",
+      "Description": "Expose the sync as a one-off admin process runnable locally and in deployment.\n\nIMPLEMENTATION DETAILS:\n- backend/app/cli.py (or `python -m backend.app.sync`): commands 'sync' (configured source) and 'sync --fixtures' (development only)\n- Prints run id, status, and counts; exit code 0 on success, non-zero on failed\n- Documented in docs/guidence/try-it-locally.md and infrastructure/DEPLOYMENT.md\n\nEFFORT: S (2 hours)\nPROJECT AREA: Backend / Ops\nDEPENDENCIES: OR-014, OR-015\n\nTESTING CRITERIA:\n- CLI test: success path exit 0 and prints counts; failure path non-zero exit\n- --fixtures rejected when APP_ENV=production\n\nEDGE CASES:\n- Database unreachable: clean error message, non-zero exit, no stack trace with credentials\n- Run already in progress: exits non-zero with 'sync already running'",
+      "Labels": "catalogue,cli,ops",
+      "Parent": "OR-E2"
+    },
+    {
+      "Issue id": "OR-017",
+      "Summary": "Documentation sync for catalogue data",
+      "Issue Type": "Task",
+      "Description": "Align documentation with the implemented catalogue layer.\n\nIMPLEMENTATION DETAILS:\n- backend/AGENT.md: data model table matches the migration (note omitted variant/availability tables if not created)\n- docs/CATALOGUE-DATA.md: record chosen source, fixture file names, removal policy, sync cadence\n- docs/learning/: capture the idempotent upsert pattern\n- docs/example-code/upsert-pattern.py added\n- docs/PLAN.md OR-E2 rows marked complete; docs/tasks/todo.md Review section with evidence\n\nEFFORT: S (2 hours)\nPROJECT AREA: Docs\nDEPENDENCIES: OR-010 through OR-016\n\nTESTING CRITERIA:\n- Docs reference only tables and commands that exist\n- All internal links resolve\n\nEDGE CASES:\n- If ADR-001 is still Proposed (no permitted source), docs state clearly that only development fixtures are in use",
+      "Labels": "docs",
+      "Parent": "OR-E2"
+    }
+  ]
+}

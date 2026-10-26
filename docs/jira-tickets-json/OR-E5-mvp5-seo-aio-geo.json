@@ -1,0 +1,76 @@
+{
+  "OR-E5": [
+    {
+      "Issue id": "OR-E5",
+      "Summary": "MVP 5: SEO, AIO & GEO",
+      "Issue Type": "Epic",
+      "Description": "Apply technical SEO, AI-assisted-search-friendly content, structured data, and the remaining informational/legal pages — improving clarity and usefulness without promising ranking outcomes.\n\nSCOPE:\n- Metadata builders: unique titles/descriptions, canonical URLs, Open Graph\n- XML sitemap and robots.txt\n- Breadcrumbs with BreadcrumbList JSON-LD\n- JSON-LD for Product, Offer (verified only), WebSite, Organization\n- About, contact, privacy, terms, and cookie pages\n- Original FAQs and buying guides\n- Image and rendering performance for Core Web Vitals\n\nOUT OF SCOPE:\n- Fake reviews/ratings, unsupported medical/beauty claims, keyword stuffing, mass-generated thin pages — never in scope\n- Paid SEO tools (ask first)\n\nREFERENCE DOCS:\n- docs/SEO-AIO-GEO.md\n- frontend/AGENT.md (SEO, Accessibility, Performance)\n- docs/CATALOGUE-DATA.md (Availability Rules)\n\nSUCCESS CRITERIA:\n- Every indexable page has unique title, description, canonical, and Open Graph metadata\n- sitemap.xml lists all indexable pages; robots.txt disallows admin/private routes\n- JSON-LD validates; Offer emitted only when price and availability are verified\n- Accurate PKR currency and Pakistan-specific content\n- Required informational and legal pages exist and are owner-reviewed\n- Core Web Vitals targets in docs/OBSERVABILITY.md met on key templates (lab measurement recorded)\n- Frontend gate passes",
+      "Labels": "mvp5,seo",
+      "Parent": ""
+    },
+    {
+      "Issue id": "OR-036",
+      "Summary": "Metadata builders: titles, descriptions, canonical, Open Graph",
+      "Issue Type": "Task",
+      "Description": "Give every page accurate, unique metadata from one set of builders.\n\nIMPLEMENTATION DETAILS:\n- frontend/lib/seo/metadata.ts: buildMetadata({title, description, path, image?, noindex?}) returning Next.js Metadata with canonical (absolute, from SITE_URL setting), Open Graph, and Twitter card\n- SITE_URL added to .env.example (public, non-secret) and validated\n- Root layout title template '%s | <Store name>'; generateMetadata on products, product detail, categories, search (noindex), referral, content pages\n- Product descriptions derived from sourced text, trimmed to ~155 chars without inventing claims\n\nEFFORT: M (4 hours)\nPROJECT AREA: Frontend\nDEPENDENCIES: OR-E3\n\nTESTING CRITERIA:\n- Vitest: canonical absolute and stripped of tracking params; noindex applied to search and paginated filter variants as documented\n- Titles unique across a sample of product and category pages\n\nEDGE CASES:\n- Filtered/sorted listing URLs: canonical points to the unfiltered listing (or documented policy)\n- Missing description: fallback built from name and category, not generic boilerplate repeated site-wide\n- SITE_URL missing in production: build fails",
+      "Labels": "seo,frontend,metadata",
+      "Parent": "OR-E5"
+    },
+    {
+      "Issue id": "OR-037",
+      "Summary": "XML sitemap and robots.txt",
+      "Issue Type": "Task",
+      "Description": "Expose crawlable page inventory and crawl rules.\n\nIMPLEMENTATION DETAILS:\n- app/sitemap.ts: homepage, products listing, visible product pages (lastModified from last_synced_at), categories with products, referral and content pages; split into multiple sitemaps if over 50,000 URLs\n- app/robots.ts: allow public pages; disallow /admin, /api, /search, /list; reference sitemap URL\n- Backend helper endpoint for slugs + timestamps if needed (paginated)\n\nEFFORT: S (3 hours)\nPROJECT AREA: Frontend\nDEPENDENCIES: OR-036\n\nTESTING CRITERIA:\n- Sitemap excludes hidden products, search, list, and admin URLs\n- robots.txt content matches policy\n\nEDGE CASES:\n- Development fixture data: sitemap and robots disallow-all when APP_ENV is not production (avoid indexing dev/staging)\n- Backend unavailable at build: sitemap generation fails loudly rather than publishing an empty sitemap",
+      "Labels": "seo,frontend",
+      "Parent": "OR-E5"
+    },
+    {
+      "Issue id": "OR-038",
+      "Summary": "Breadcrumbs and internal linking",
+      "Issue Type": "Task",
+      "Description": "Add navigational breadcrumbs and structured breadcrumb data.\n\nIMPLEMENTATION DETAILS:\n- components/layout/Breadcrumbs: nav aria-label='Breadcrumb', ordered list, aria-current on last item\n- Used on category and product pages from the category ancestor path (OR-019)\n- BreadcrumbList JSON-LD emitted alongside\n- Related products and category links on PDP support internal linking\n\nEFFORT: S (3 hours)\nPROJECT AREA: Frontend\nDEPENDENCIES: OR-036\n\nTESTING CRITERIA:\n- Vitest: correct order, aria attributes, JSON-LD item positions\n\nEDGE CASES:\n- Product in multiple categories: deterministic primary category chosen and documented\n- Deeply nested categories: all ancestors shown, no truncation of structured data",
+      "Labels": "seo,frontend,accessibility",
+      "Parent": "OR-E5"
+    },
+    {
+      "Issue id": "OR-039",
+      "Summary": "JSON-LD builders: Product, Offer, WebSite, Organization",
+      "Issue Type": "Task",
+      "Description": "Emit valid, truthful structured data.\n\nIMPLEMENTATION DETAILS:\n- frontend/lib/seo/jsonld.ts: productJsonLd(product), offerJsonLd(product) (only if price_pkr present AND availability verified; priceCurrency PKR; availability mapped to schema.org values; url = product page), websiteJsonLd() with SearchAction to /search, organizationJsonLd() describing the independent store (not Oriflame)\n- Rendered via a JsonLd component using a script tag with JSON.stringify and safe escaping of '<'\n- No aggregateRating or review fields\n\nEFFORT: M (4 hours)\nPROJECT AREA: Frontend\nDEPENDENCIES: OR-036, OR-021\n\nTESTING CRITERIA:\n- Vitest: Offer omitted when price null or availability not_confirmed; present when both verified\n- Output passes a structured-data validator (result recorded in todo.md Review)\n- Escaping test: product name containing '</script>' cannot break out\n\nEDGE CASES:\n- Brand field: 'Oriflame' as product brand is factual; Organization must be the store itself, never claiming to be Oriflame\n- Development fixture products: JSON-LD suppressed",
+      "Labels": "seo,frontend,structured-data",
+      "Parent": "OR-E5"
+    },
+    {
+      "Issue id": "OR-040",
+      "Summary": "About, contact, privacy, terms, and cookie pages",
+      "Issue Type": "Task",
+      "Description": "Add required informational and legal pages.\n\nIMPLEMENTATION DETAILS:\n- app/about, app/contact, app/privacy, app/terms, app/cookies (Server Components, metadata via OR-036)\n- About: who runs the store, independent status, how referral works\n- Contact: owner-approved contact method (email/WhatsApp link); if a form is added it uses Zod + React Hook Form, server-side validation, rate limiting, and collects only what is necessary\n- Privacy: what is stored (local shopping list in browser, anonymous click counts), no payment/address collection, third parties (Oriflame checkout)\n- Cookies: actual cookies/storage used; consent banner only if non-essential cookies are introduced\n- Content marked for owner/legal review; footer links to all pages\n\nEFFORT: M (5 hours)\nPROJECT AREA: Frontend / Content\nDEPENDENCIES: OR-036\n\nTESTING CRITERIA:\n- All pages render with unique metadata and are in the sitemap\n- Privacy and cookie pages match actual data practices (checklist in todo.md Review)\n\nEDGE CASES:\n- No legal template text claiming practices the site does not follow\n- Contact details are configuration or owner-approved content, never invented",
+      "Labels": "content,legal,frontend",
+      "Parent": "OR-E5"
+    },
+    {
+      "Issue id": "OR-041",
+      "Summary": "Original FAQs and buying guides",
+      "Issue Type": "Task",
+      "Description": "Publish helpful, original content that answers real visitor questions in a way AI-assisted search can cite.\n\nIMPLEMENTATION DETAILS:\n- FAQ section on /referral (and /faq if warranted): how ordering through Oriflame works, delivery and payment handled by Oriflame, using the consultant code, price accuracy and PKR, availability labels\n- 2–4 owner-approved guides (e.g. 'How to order Oriflame products in Pakistan through this store') as app/guides/[slug] pages with metadata\n- Content stored as MDX or typed content files; clear headings, concise answers, dates\n- FAQPage JSON-LD only where the page genuinely is an FAQ\n\nEFFORT: M (5 hours, plus owner review)\nPROJECT AREA: Content / Frontend\nDEPENDENCIES: OR-040\n\nTESTING CRITERIA:\n- Owner approval recorded for each published piece\n- Guides appear in sitemap with unique metadata\n\nEDGE CASES:\n- No medical/beauty efficacy claims, no fake testimonials, no mass-generated thin pages\n- No promises about delivery times, discounts, or rankings unless confirmed",
+      "Labels": "content,aio,geo",
+      "Parent": "OR-E5"
+    },
+    {
+      "Issue id": "OR-042",
+      "Summary": "Performance and Core Web Vitals",
+      "Issue Type": "Task",
+      "Description": "Meet Core Web Vitals targets on key page templates.\n\nIMPLEMENTATION DETAILS:\n- Audit homepage, listing, PDP, category: next/image sizes/priority for LCP image, explicit dimensions (CLS), font loading via next/font\n- Minimise client JavaScript: verify only interactive leaves are Client Components; analyse bundle\n- Caching/revalidation strategy for catalogue pages documented\n- Web Vitals reporting hook (reportWebVitals or equivalent) logging to console in dev and to the chosen analytics endpoint only if approved\n\nEFFORT: M (4 hours)\nPROJECT AREA: Frontend / Performance\nDEPENDENCIES: OR-E3\n\nTESTING CRITERIA:\n- Lab measurements (Lighthouse) for each template recorded in todo.md Review: LCP < 2.5s, CLS < 0.1 on mobile profile\n- Bundle size before/after recorded\n\nEDGE CASES:\n- Third-party scripts: none added without explicit approval\n- Large product images from source: resized via Next.js image optimisation, never served raw",
+      "Labels": "performance,frontend",
+      "Parent": "OR-E5"
+    },
+    {
+      "Issue id": "OR-043",
+      "Summary": "Documentation sync for SEO, AIO & GEO",
+      "Issue Type": "Task",
+      "Description": "Align documentation with implemented SEO work.\n\nIMPLEMENTATION DETAILS:\n- docs/SEO-AIO-GEO.md: canonical policy, noindex policy, sitemap scope, JSON-LD rules as built\n- docs/example-code/jsonld-pattern.ts\n- docs/learning/: note on truthful structured data (Offer gating)\n- docs/PLAN.md OR-E5 rows complete; todo.md Review with validator and Lighthouse evidence\n\nEFFORT: S (2 hours)\nPROJECT AREA: Docs\nDEPENDENCIES: OR-036 through OR-042\n\nTESTING CRITERIA:\n- Docs match implementation; links resolve\n\nEDGE CASES:\n- Docs must not promise ranking outcomes",
+      "Labels": "docs",
+      "Parent": "OR-E5"
+    }
+  ]
+}

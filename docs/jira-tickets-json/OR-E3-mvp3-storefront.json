@@ -1,0 +1,100 @@
+{
+  "OR-E3": [
+    {
+      "Issue id": "OR-E3",
+      "Summary": "MVP 3: Storefront",
+      "Issue Type": "Epic",
+      "Description": "Deliver the public product discovery experience: paginated catalogue APIs and the homepage, listing, category, product detail, and search pages, plus a local shopping list.\n\nSCOPE:\n- Public read APIs: products (filter/sort/paginate), product detail, categories, search\n- Availability service producing honest labels\n- Frontend Zod schemas and reusable product components\n- Homepage, product listing, category, product detail, and search results pages\n- Local shopping list/cart stored in the browser only\n\nOUT OF SCOPE:\n- Referral handoff behaviour (placeholder slot only; implemented in OR-E4)\n- Full SEO metadata/JSON-LD (OR-E5)\n- Payment, delivery address, or account features — never in scope\n\nREFERENCE DOCS:\n- frontend/AGENT.md (Page Specifications, Data Fetching, Accessibility)\n- backend/AGENT.md (API Endpoint Pattern)\n- docs/CATALOGUE-DATA.md (Availability Rules)\n\nSUCCESS CRITERIA:\n- Search, category browsing, and product details work against fixtures or authorised data\n- All list endpoints are paginated with bounded page sizes\n- Availability is shown only when verified; otherwise 'Check availability at Oriflame' or 'Availability not confirmed'\n- Development fixture data is visibly labelled as such\n- Shopping list works without accounts and collects no payment or address data\n- Backend and frontend gates pass",
+      "Labels": "mvp3,storefront",
+      "Parent": ""
+    },
+    {
+      "Issue id": "OR-018",
+      "Summary": "Products API: listing with filter/sort/pagination and product detail",
+      "Issue Type": "Task",
+      "Description": "Expose visible products through typed, paginated endpoints.\n\nIMPLEMENTATION DETAILS:\n- GET /api/v1/products: query model (category slug, min/max price, sort in name_asc/name_desc/price_asc/price_desc/newest, page >= 1, page_size 1–100 default 24); response {items, total, page, page_size}\n- GET /api/v1/products/{slug}: detail with images, categories, price_pkr, availability label, source_url, last_synced_at, related products (same category, limit 4)\n- ProductService in services/products.py; repository query functions; routers hold no logic\n- Only is_visible products returned; data_source field included so the UI can flag development fixtures\n\nEFFORT: M (6 hours)\nPROJECT AREA: Backend\nDEPENDENCIES: OR-E2\n\nTESTING CRITERIA:\n- Pagination totals correct; page_size > 100 rejected (422)\n- Each sort order verified; invalid sort rejected\n- Hidden products return 404 on detail and are excluded from lists\n- Unknown slug returns 404 with safe message\n\nEDGE CASES:\n- Products with NULL price: excluded from price filters, sorted last for price sorts, shown as 'Price not available'\n- Page beyond last page: empty items with correct total, not an error\n- Slug with invalid characters: 422, never reaches the database",
+      "Labels": "storefront,backend,api",
+      "Parent": "OR-E3"
+    },
+    {
+      "Issue id": "OR-019",
+      "Summary": "Categories API",
+      "Issue Type": "Task",
+      "Description": "Expose the category tree and category detail for navigation and category pages.\n\nIMPLEMENTATION DETAILS:\n- GET /api/v1/categories: tree (id, slug, name, children, visible product count)\n- GET /api/v1/categories/{slug}: category with breadcrumb path (ancestors) for later BreadcrumbList use\n- Category products served via /api/v1/products?category=slug (OR-018)\n\nEFFORT: S (3 hours)\nPROJECT AREA: Backend\nDEPENDENCIES: OR-018\n\nTESTING CRITERIA:\n- Tree nesting correct; counts exclude hidden products\n- Ancestor path correct for nested categories; unknown slug 404\n\nEDGE CASES:\n- Empty categories: included with count 0 (frontend may hide)\n- Cyclic parent data from source: detected and broken safely, logged",
+      "Labels": "storefront,backend,api",
+      "Parent": "OR-E3"
+    },
+    {
+      "Issue id": "OR-020",
+      "Summary": "Search API with PostgreSQL full-text search",
+      "Issue Type": "Task",
+      "Description": "Provide relevant, safe product search.\n\nIMPLEMENTATION DETAILS:\n- Migration adding a generated tsvector column (name weighted A, description B) with GIN index, plus pg_trgm index on name (CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA extensions — Supabase convention) for fuzzy fallback\n- GET /api/v1/search?q=&page=&page_size=: websearch_to_tsquery ranking; trigram similarity fallback when no full-text hits\n- Same response shape and pagination as products listing\n- Rate limit applied (shared limiter introduced here or in OR-E6; document which)\n\nEFFORT: M (5 hours)\nPROJECT AREA: Backend / Database\nDEPENDENCIES: OR-018\n\nTESTING CRITERIA:\n- Exact name match ranks first; partial and misspelled queries return sensible results\n- q length bounded (1–100); empty q returns 422\n- Migration reversible; no drift\n\nEDGE CASES:\n- Query with SQL/tsquery special characters: handled safely by websearch_to_tsquery and parameters\n- Non-Latin input (Urdu): no error; returns results if present, otherwise empty\n- Hidden products never appear in results",
+      "Labels": "storefront,backend,search",
+      "Parent": "OR-E3"
+    },
+    {
+      "Issue id": "OR-021",
+      "Summary": "Availability service and honest labels",
+      "Issue Type": "Task",
+      "Description": "Centralise how availability is described so no page can overstate it.\n\nIMPLEMENTATION DETAILS:\n- services/availability.py: availability_for(product) returning a typed status: verified_in_stock / verified_out_of_stock / not_confirmed, plus label text and checked_at\n- verified_* only when ProductAvailability data exists from the source and is within a freshness window (configurable, documented); otherwise not_confirmed with label 'Availability not confirmed' (list) / 'Check availability at Oriflame' (detail CTA context)\n- GET /api/v1/availability/{slug} if the detail payload alone is insufficient\n- Never expose stock quantities\n\nEFFORT: S (3 hours)\nPROJECT AREA: Backend\nDEPENDENCIES: OR-018\n\nTESTING CRITERIA:\n- No availability data: not_confirmed\n- Stale data beyond window: not_confirmed (not 'in stock')\n- Fresh verified data: verified status with checked_at\n\nEDGE CASES:\n- Source provides quantities: stored if useful but never returned or displayed\n- Labels never use wording implying real-time stock unless the source is genuinely real-time and ADR-001 says so",
+      "Labels": "storefront,availability",
+      "Parent": "OR-E3"
+    },
+    {
+      "Issue id": "OR-022",
+      "Summary": "Frontend catalogue schemas and product components",
+      "Issue Type": "Task",
+      "Description": "Build the typed data layer and reusable UI pieces for catalogue pages.\n\nIMPLEMENTATION DETAILS:\n- frontend/lib/api/schemas/: product, productPage, category, searchResult Zod schemas; api functions getProducts, getProduct, getCategories, getCategory, searchProducts\n- components/product/: ProductCard, ProductGrid, Price (formats PKR with Intl.NumberFormat('en-PK'), 'Price not available' for null), AvailabilityBadge, ProductImage (next/image, factual alt text, placeholder when no authorised image)\n- components/layout/: Header with category navigation and search box, Footer with independence disclaimer, DevDataBanner shown when any rendered item has data_source dev_fixture\n- next.config images.remotePatterns set only to authorised hosts from ADR-001\n\nEFFORT: M (6 hours)\nPROJECT AREA: Frontend\nDEPENDENCIES: OR-018, OR-019, OR-021\n\nTESTING CRITERIA:\n- Vitest: Price formatting and null case; AvailabilityBadge labels per status; ProductCard accessible name and link\n- DevDataBanner renders for fixture items only\n- Zod rejects malformed API payloads\n\nEDGE CASES:\n- Image URL from unauthorised host: not rendered; placeholder used\n- Very long product names: truncated visually with full name accessible\n- Components remain Server Components unless interactive",
+      "Labels": "storefront,frontend,components",
+      "Parent": "OR-E3"
+    },
+    {
+      "Issue id": "OR-023",
+      "Summary": "Homepage",
+      "Issue Type": "Task",
+      "Description": "Create an attractive, responsive homepage for product discovery.\n\nIMPLEMENTATION DETAILS:\n- app/page.tsx (Server Component): hero with clear independent-storefront wording, featured products (is_featured), category entry points, how-it-works strip linking to /referral\n- Revalidation strategy (ISR) documented; no client-side data fetching for initial render\n- Empty states when no featured products or categories exist\n\nEFFORT: M (4 hours)\nPROJECT AREA: Frontend\nDEPENDENCIES: OR-022\n\nTESTING CRITERIA:\n- Renders with fixtures; one h1; landmarks present\n- Empty catalogue renders a helpful empty state, not an error\n- Lighthouse/LCP check recorded in todo.md Review\n\nEDGE CASES:\n- Backend unavailable: page shell with 'catalogue temporarily unavailable' message\n- No Oriflame logos, trademarks used as branding, or wording implying official status",
+      "Labels": "storefront,frontend,page",
+      "Parent": "OR-E3"
+    },
+    {
+      "Issue id": "OR-024",
+      "Summary": "Product listing and category pages with filters and sorting",
+      "Issue Type": "Task",
+      "Description": "Let visitors browse, filter, and sort products.\n\nIMPLEMENTATION DETAILS:\n- app/products/page.tsx and app/categories/[slug]/page.tsx (Server Components) reading filters/sort/page from searchParams\n- components/filters/: FilterPanel (category, price range) and SortSelect as small Client Components updating the URL (shareable state)\n- Pagination component with accessible links (rel prev/next)\n- Category page shows category name, breadcrumb trail (visual), and its products\n\nEFFORT: M (6 hours)\nPROJECT AREA: Frontend\nDEPENDENCIES: OR-022\n\nTESTING CRITERIA:\n- Filters and sort reflected in URL and results; back button restores state\n- Keyboard-operable filters with labels; screen-reader announcement of result count\n- Unknown category slug renders not-found page (404)\n\nEDGE CASES:\n- Invalid searchParams (negative page, unknown sort): normalised to defaults, never crash\n- Zero results: helpful empty state with link to clear filters\n- Price filter min > max: corrected or validation message",
+      "Labels": "storefront,frontend,page",
+      "Parent": "OR-E3"
+    },
+    {
+      "Issue id": "OR-025",
+      "Summary": "Product detail page",
+      "Issue Type": "Task",
+      "Description": "Show complete, honest product information.\n\nIMPLEMENTATION DETAILS:\n- app/products/[slug]/page.tsx (Server Component) showing, where available: name, image gallery, description, price (PKR), variants, availability badge, attributes/ingredients only when sourced, related products, official product source link\n- Reserved slot for the 'Buy from Oriflame' handoff (wired in OR-E4) and 'Add to list' button (OR-027)\n- Note: 'Checkout and fulfilment happen on Oriflame's official platform.'\n- generateStaticParams for visible products with revalidation; notFound() for unknown/hidden\n\nEFFORT: M (6 hours)\nPROJECT AREA: Frontend\nDEPENDENCIES: OR-022, OR-021\n\nTESTING CRITERIA:\n- Renders all available fields; omits sections with no sourced data (no empty headings)\n- Source link opens official page with rel='noopener'\n- Hidden product slug returns 404\n\nEDGE CASES:\n- No images: placeholder with neutral alt text\n- Description containing HTML from source: rendered as text or sanitised with an allow-list — never raw\n- No medical/beauty claims added beyond sourced text",
+      "Labels": "storefront,frontend,page",
+      "Parent": "OR-E3"
+    },
+    {
+      "Issue id": "OR-026",
+      "Summary": "Search results page",
+      "Issue Type": "Task",
+      "Description": "Display search results from the search API.\n\nIMPLEMENTATION DETAILS:\n- app/search/page.tsx (Server Component) reading q and page from searchParams\n- Header search box submits via GET to /search (works without JavaScript)\n- Results grid, result count, pagination, and no-results suggestions (popular categories)\n- Search results pages set noindex (finalised in OR-E5)\n\nEFFORT: S (3 hours)\nPROJECT AREA: Frontend\nDEPENDENCIES: OR-020, OR-022\n\nTESTING CRITERIA:\n- Query reflected in input and heading; results rendered\n- Empty/whitespace q shows prompt instead of calling the API\n- Works with JavaScript disabled (form GET)\n\nEDGE CASES:\n- q longer than 100 chars: truncated before request\n- Special characters echoed safely (React escaping), no XSS\n- API rate-limit response: friendly 'please try again shortly' message",
+      "Labels": "storefront,frontend,search",
+      "Parent": "OR-E3"
+    },
+    {
+      "Issue id": "OR-027",
+      "Summary": "Local shopping list",
+      "Issue Type": "Task",
+      "Description": "Let visitors build a shopping list stored only in their browser.\n\nIMPLEMENTATION DETAILS:\n- components/referral/ShoppingList (Client Component) with context provider; persistence in localStorage under a versioned key; stores slug, name, quantity, price snapshot\n- AddToListButton on cards and PDP; header indicator with item count\n- /list page (or drawer) showing items, quantities, indicative total in PKR labelled 'Indicative — final price on Oriflame'\n- Handoff button slot for OR-E4\n\nEFFORT: M (5 hours)\nPROJECT AREA: Frontend\nDEPENDENCIES: OR-025\n\nTESTING CRITERIA:\n- Add, update quantity, remove, persist across reloads\n- Keyboard and screen-reader operable; count changes announced\n- No network request sends list contents; no address/payment fields exist\n\nEDGE CASES:\n- localStorage unavailable or quota exceeded: in-memory fallback with notice\n- Corrupted or old-version stored data: discarded safely\n- Product later hidden or price changed: item flagged on next load ('no longer available' / 'price updated')",
+      "Labels": "storefront,frontend,cart",
+      "Parent": "OR-E3"
+    },
+    {
+      "Issue id": "OR-028",
+      "Summary": "Documentation sync for storefront",
+      "Issue Type": "Task",
+      "Description": "Align documentation with the implemented storefront.\n\nIMPLEMENTATION DETAILS:\n- frontend/AGENT.md architecture tree and page specs match reality\n- backend/AGENT.md endpoint list updated\n- docs/example-code: api-endpoint-pattern.py, component-pattern.tsx, zod-schema-pattern.ts\n- docs/PLAN.md OR-E3 rows complete; docs/tasks/todo.md Review with evidence (screenshots or test output)\n\nEFFORT: S (2 hours)\nPROJECT AREA: Docs\nDEPENDENCIES: OR-018 through OR-027\n\nTESTING CRITERIA:\n- Docs reference only existing routes and components; links resolve\n\nEDGE CASES:\n- Any deviation from frontend/AGENT.md page specs recorded with rationale (ADR if architectural)",
+      "Labels": "docs",
+      "Parent": "OR-E3"
+    }
+  ]
+}
