@@ -84,14 +84,18 @@ def finish_run(
     session.flush()
 
 
-def fail_stale_runs(session: Session, *, started_before: datetime) -> int:
-    """Mark runs left 'running' since before the cutoff as failed. Returns how many."""
+def fail_stale_runs(session: Session, *, started_before: datetime | None = None) -> int:
+    """Mark runs left 'running' as failed. Returns how many.
+
+    With ``started_before`` only older runs are touched. Without it every running run
+    is failed, which is correct only while holding ``catalogue_sync_lock``.
+    """
+    conditions = [CatalogueSyncRun.status == SyncRunStatus.RUNNING]
+    if started_before is not None:
+        conditions.append(CatalogueSyncRun.started_at < started_before)
     result = session.execute(
         update(CatalogueSyncRun)
-        .where(
-            CatalogueSyncRun.status == SyncRunStatus.RUNNING,
-            CatalogueSyncRun.started_at < started_before,
-        )
+        .where(*conditions)
         .values(
             status=SyncRunStatus.FAILED,
             finished_at=func.now(),

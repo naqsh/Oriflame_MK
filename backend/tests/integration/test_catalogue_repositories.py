@@ -12,7 +12,7 @@ from backend.app.models import CatalogueSyncRun, Category, Product, ProductImage
 from backend.app.repositories import products as products_repo
 from backend.app.repositories.categories import upsert_categories
 from backend.app.repositories.outcomes import UpsertOutcome
-from backend.app.repositories.products import upsert_product
+from backend.app.repositories.products import hide_products_missing_from, upsert_product
 from backend.app.repositories.sync_runs import (
     ERROR_DETAIL_MAX_LENGTH,
     SyncAlreadyRunningError,
@@ -387,3 +387,10 @@ def test_lock_is_released_when_the_sync_raises(migrated_engine: Engine) -> None:
         raise RuntimeError("sync crashed")
     with catalogue_sync_lock(migrated_engine):
         pass
+
+
+def test_hiding_with_an_empty_source_list_is_refused(db_session: Session) -> None:
+    upsert_product(db_session, _record(), synced_at=FIRST_SYNC)
+    with pytest.raises(ValueError, match="Refusing to hide every product"):
+        hide_products_missing_from(db_session, set())
+    assert _product(db_session).is_visible is True

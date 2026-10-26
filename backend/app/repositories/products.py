@@ -6,6 +6,7 @@ links change together or not at all. ``last_synced_at`` is always refreshed;
 Existing products keep their slug, so storefront URLs stay stable.
 """
 
+from collections.abc import Collection
 from dataclasses import dataclass, field
 from datetime import datetime
 
@@ -157,3 +158,19 @@ def upsert_product(
             )
         outcome = combine(outcome, children_changed=children_changed)
     return ProductUpsertResult(product_id=product_id, outcome=outcome, missing_categories=missing)
+
+
+def hide_products_missing_from(session: Session, seen_source_ids: Collection[str]) -> list[str]:
+    """Hide visible products the source no longer lists. Never deletes; returns their ids.
+
+    An empty ``seen_source_ids`` would hide the whole catalogue, so it is refused.
+    """
+    if not seen_source_ids:
+        raise ValueError("Refusing to hide every product: the source listed none.")
+    hidden = session.scalars(
+        update(Product)
+        .where(Product.is_visible.is_(True), Product.source_id.not_in(list(seen_source_ids)))
+        .values(is_visible=False, updated_at=func.now())
+        .returning(Product.source_id)
+    )
+    return sorted(hidden)

@@ -44,6 +44,12 @@ Record the chosen source, its terms, and image/content usage rights in an ADR (`
 
 ---
 
+## Sync Runs
+
+`CatalogueSyncService` (OR-014) records every run in `catalogue_sync_runs` as `success`, `partial` or `failed`; see `backend/AGENT.md` (Catalogue sync) for the rules. Only one sync runs at a time. A rerun after a failure is safe: committed batches are kept and upserts never duplicate. Products the source stops listing are hidden, not deleted. An empty source fails the run instead of hiding the catalogue.
+
+---
+
 ## Availability Rules
 
 - If live inventory is unavailable, label availability as **"Check availability at Oriflame"** or **"Availability not confirmed."**

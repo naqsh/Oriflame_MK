@@ -68,6 +68,7 @@ backend/
 │   ├── integrations/
 │   │   └── oriflame/
 │   │       ├── __init__.py     # get_catalogue_source(settings) - picks the CATALOGUE_SOURCE adapter
+│   │       ├── catalogue.py    # CatalogueSyncService: lock, run row, batches, hide removed, final status
 │   │       ├── client.py       # CatalogueSource Protocol, SourceError family, InvalidRecord, parse_records
 │   │       ├── fixtures.py     # FixtureCatalogueSource (dev_fixture; refuses APP_ENV=production)
 │   │       └── http.py         # FeedHttpClient: timeouts, bounded retries, Retry-After, no auth bypass
@@ -81,7 +82,7 @@ backend/
 └── tests/
     ├── conftest.py             # clean_env, app/client/async_client, TEST_POSTGRES_URL db fixtures
     ├── unit/                   # config, db session, slugs, catalogue schemas, sources (fixture, mocked HTTP)
-    ├── integration/            # health, request context, migrations, catalogue schema + repositories (db)
+    ├── integration/            # health, request context, migrations, catalogue schema, repositories, sync (db)
     └── security/               # CORS, outbound network blocked
 ```
 
@@ -187,6 +188,16 @@ Use unique constraints, foreign keys, and indexes for product slug, SKU/source I
 **Catalogue upserts** (`repositories/`, OR-012): `INSERT ... ON CONFLICT (source_id) DO UPDATE ... WHERE` the source-owned fields (`sku`, `name`, `description`, `price_pkr`, `source_url`) differ; `xmax = 0` in `RETURNING` tells created from updated. With no field change only `last_synced_at` moves; `updated_at` moves only when a field, image or category link changed. A sync never overwrites `slug`, `is_visible` or `is_featured`. Images are replaced only when the ordered list differs. Unknown category ids are skipped and reported, never created. Category parents are linked in a second pass, so record order cannot violate the foreign key. Only one sync may run at a time: `catalogue_sync_lock` takes a PostgreSQL advisory lock on its own connection and raises `SyncAlreadyRunningError` otherwise.
 
 **Catalogue sources** (`integrations/oriflame/`, OR-013): the sync sees only the `CatalogueSource` Protocol (`name`, `iter_categories()`, `iter_products()`). Each item is a validated record or an `InvalidRecord` (problems listed without input values); whole-source failures raise `SourceAuthError` (401/403, never retried), `SourceRateLimitedError`, `SourceUnavailableError`, `SourceMalformedError` or `SourcePageError` (a later page failed: the run is partial). `CATALOGUE_SOURCE` accepts only `fixture` until ADR-001 accepts a permitted source; any other value fails at startup. No integration code targets Oriflame's hosts, and a test enforces it.
+
+**Catalogue sync** (`integrations/oriflame/catalogue.py`, OR-014): `CatalogueSyncService.run(source)` holds the advisory lock, fails any orphaned `running` row, records a new run, upserts categories then products (committed every 100), hides products the source no longer lists (never deletes), and finishes the row:
+
+| Status | When |
+|---|---|
+| `success` | Every record saved; source read to the end |
+| `partial` | Some records invalid or rejected by the database, or a later page failed (nothing hidden then) |
+| `failed` | Whole-source error (auth, unreachable, rate limited, malformed), no valid products (the catalogue is never hidden on an empty source), or a database error outside a single record (recorded, then re-raised) |
+
+Run counts are product outcomes. `error_detail` lists up to 50 lines (then "... and N more", capped at 4000 characters) and never contains input values, query strings or driver messages. Unknown category or parent references are noted there without counting as errors. Events: `catalogue_sync_started`, `catalogue_sync_finished`, `catalogue_sync_failed`, `catalogue_products_hidden`. A sync never sets `is_visible` back to true, so a product hidden earlier (by a sync or an admin) stays hidden when it reappears until OR-E6 provides an admin control.
 
 **Slugs** (`services/slugs.py`): `slugify(name)`; when another source row already holds it, append `-{slugify(source_id)}`. Source ids are unique, so the result does not depend on sync order. A numeric suffix is a last resort. Truncated to 200 characters with the suffix kept. Avoid storing customer personal data unless a feature genuinely requires it.
 
