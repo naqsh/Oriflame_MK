@@ -65,6 +65,7 @@ Record the chosen source, its terms, and image/content usage rights in an ADR (`
 - If live inventory is unavailable, label availability as **"Check availability at Oriflame"** or **"Availability not confirmed."**
 - Never invent stock quantities or describe stale data as real-time.
 - Emit `Offer` structured data only when price/availability are verified (see `docs/SEO-AIO-GEO.md`).
+- **Implementation (OR-021):** `backend/app/services/availability.py`. A source check counts as verified only for `AVAILABILITY_MAX_AGE_HOURS` (default 24); stock quantities are never returned. Today every product is `not_confirmed`, because no source provides availability.
 
 ---
 

@@ -71,7 +71,7 @@ backend/
 │   │   └── sync_runs.py        # start/finish/fail_stale_runs, catalogue_sync_lock (advisory lock)
 │   ├── services/
 │   │   ├── categories.py       # CategoryService: tree, detail, break_cycles
-│   │   ├── availability.py     # availability_for: not_confirmed until a source provides availability (OR-021 completes)
+│   │   ├── availability.py     # describe/availability_for: honest labels, freshness window, no quantities
 │   │   ├── health.py           # ReadinessService (SELECT 1); (planned) referral (ReferralService)
 │   │   ├── products.py         # ProductService: list/get, ProductNotFoundError
 │   │   └── slugs.py            # slugify + deterministic collision suffix (source id)
@@ -233,6 +233,18 @@ Why each step is there: [`docs/learning/2026-10-idempotent-catalogue-upserts.md`
 |---|---|
 | `GET /api/v1/products` | Visible products only. `category` (slug; includes subcategories), `min_price`/`max_price` (products without a price never match), `sort` (`name_asc` default, `name_desc`, `price_asc`, `price_desc`, `newest`; unknown prices last), `page` (from 1), `page_size` (1 to 100, default 24). Returns `{items, total, page, page_size}`; a page past the end returns empty `items` with the real `total`. An unknown category returns no items |
 | `GET /api/v1/products/{slug}` | Detail with images (by position), categories, `sku`, `description`, `source_url`, `last_synced_at` and up to 4 `related` products (shared category, by name). Hidden or unknown slugs return 404 `{"detail": "Product not found"}` |
+
+### Availability (OR-021)
+
+`services/availability.py` is the only place availability wording is decided:
+
+| Status | When | Label |
+|---|---|---|
+| `verified_in_stock` | A source snapshot says in stock and was checked within `AVAILABILITY_MAX_AGE_HOURS` (default 24) | "In stock at Oriflame when last checked", with `checked_at` |
+| `verified_out_of_stock` | Same, out of stock | "Out of stock at Oriflame when last checked", with `checked_at` |
+| `not_confirmed` | No snapshot, or one that is stale, future-dated or without a timezone | "Availability not confirmed" in lists, "Check availability at Oriflame" on detail |
+
+Labels never say "now" or "live", and stock quantities are never returned. No source provides availability today (ADR-001; no availability table), so `snapshot_for` returns `None` and every product is `not_confirmed`. The product detail already carries availability, so there is no separate `/availability/{slug}` endpoint.
 
 ### Search API (OR-020)
 
