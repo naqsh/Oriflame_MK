@@ -6,7 +6,26 @@
 
 ## Current Epic
 
-**OR-E2 — MVP 2: Catalogue Data**, merged in PR naqsh/Oriflame_MK#3 (`46f234c`). Next epic: OR-E3 (not started). See `docs/PLAN.md`.
+**OR-E3 — MVP 3: Storefront** on branch `epic/E3-storefront` (from `epic/autonomus-implementation` at `ea3d6ff`). See `docs/PLAN.md`.
+
+### Plan
+
+- [x] OR-018: `GET /api/v1/products` (query model with category including subcategories, price range, 5 sorts, page, and page_size 1 to 100) and `GET /api/v1/products/{slug}` (images, categories, availability, source URL, last sync, 4 related). Router → `ProductService` → `repositories/product_reads.py`. Visible products only; `data_source` / `is_development_data` on every item. Availability comes from a minimal `services/availability.py` (always `not_confirmed`, since no source provides availability); OR-021 completes it. Evidence: backend gate clean; 238 passed with `-W error::DeprecationWarning`, 98.81% coverage. `test_products_api.py` (33 tests) covers pagination totals, page_size over 100 → 422, every sort with unknown prices last, invalid sort → 422, hidden products excluded and 404, unknown slug → safe 404, a page past the end → empty with the total, price filters excluding unknown prices, invalid slugs rejected before the database, unknown parameters → 422, and cyclic category data.
+- [ ] OR-019: categories API
+- [ ] OR-020: search API with PostgreSQL full-text search
+- [ ] OR-021: availability service and honest labels
+- [ ] OR-022: frontend catalogue schemas and product components
+- [ ] OR-023: homepage
+- [ ] OR-024: product listing and category pages
+- [ ] OR-025: product detail page
+- [ ] OR-026: search results page
+- [ ] OR-027: local shopping list
+- [ ] OR-028: documentation sync for storefront
+
+---
+
+## OR-E2 record (merged in PR naqsh/Oriflame_MK#3, `46f234c`)
+
 
 ### Plan
 

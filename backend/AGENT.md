@@ -41,7 +41,8 @@ backend/
 │   │   └── health.py           # GET /health, GET /health/ready (root, not versioned)
 │   ├── api/v1/
 │   │   ├── router.py           # api_router, mounted at /api/v1 (no endpoints yet)
-│   │   └── endpoints/          # (planned) products, categories, search, availability, referral, admin
+│   │   └── endpoints/
+│   │       └── products.py     # GET /api/v1/products, /api/v1/products/{slug}; (planned) categories, search, referral, admin
 │   ├── core/
 │   │   ├── config.py           # Settings, ReferralConfig, ConfigProvider; ALLOWED_REFERRAL_HOSTS (referral host allow-list)
 │   │   ├── logging.py          # structlog JSON + RequestContextMiddleware (X-Request-ID, request_completed)
@@ -54,16 +55,20 @@ backend/
 │   │   └── catalogue.py        # Product, ProductImage, Category, product_categories, CatalogueSyncRun
 │   ├── schemas/
 │   │   ├── catalogue.py        # ProductRecord, ImageRecord, CategoryRecord (validated sync input)
+│   │   ├── products.py         # ProductQuery, ProductPage, ProductSummary, ProductDetail, Availability
 │   │   ├── errors.py           # ErrorResponse
 │   │   └── health.py           # HealthResponse, ReadinessResponse
 │   ├── repositories/           # DB access only, no HTTP or business logic
 │   │   ├── categories.py       # upsert_categories (two-pass parents), category_ids_by_source
 │   │   ├── outcomes.py         # UpsertOutcome (created/updated/unchanged), WAS_INSERTED
+│   │   ├── product_reads.py    # Visible-only listing (filters, sorts, descendant categories), detail, related
 │   │   ├── products.py         # upsert_product: row + images + category links in one savepoint
 │   │   ├── slugs.py            # new_slug: collision check against the database
 │   │   └── sync_runs.py        # start/finish/fail_stale_runs, catalogue_sync_lock (advisory lock)
 │   ├── services/
-│   │   ├── health.py           # ReadinessService (SELECT 1); (planned) products, availability, referral (ReferralService)
+│   │   ├── availability.py     # availability_for: not_confirmed until a source provides availability (OR-021 completes)
+│   │   ├── health.py           # ReadinessService (SELECT 1); (planned) referral (ReferralService)
+│   │   ├── products.py         # ProductService: list/get, ProductNotFoundError
 │   │   └── slugs.py            # slugify + deterministic collision suffix (source id)
 │   ├── integrations/
 │   │   └── oriflame/
@@ -214,6 +219,16 @@ Why each step is there: [`docs/learning/2026-10-idempotent-catalogue-upserts.md`
 - Versioned under `/api/v1`.
 - Typed Pydantic response models; use `fastapi.status` constants.
 - List endpoints accept `page`/`page_size` (bounded) and return total counts.
+- Query parameters are one Pydantic model (`Annotated[Model, Query()]`, `extra="forbid"`), so unknown or invalid parameters return 422 before any query runs. Path slugs are validated with `SLUG_PATTERN`.
+
+### Products API (OR-018)
+
+| Endpoint | Behaviour |
+|---|---|
+| `GET /api/v1/products` | Visible products only. `category` (slug; includes subcategories), `min_price`/`max_price` (products without a price never match), `sort` (`name_asc` default, `name_desc`, `price_asc`, `price_desc`, `newest`; unknown prices last), `page` (from 1), `page_size` (1 to 100, default 24). Returns `{items, total, page, page_size}`; a page past the end returns empty `items` with the real `total`. An unknown category returns no items |
+| `GET /api/v1/products/{slug}` | Detail with images (by position), categories, `sku`, `description`, `source_url`, `last_synced_at` and up to 4 `related` products (shared category, by name). Hidden or unknown slugs return 404 `{"detail": "Product not found"}` |
+
+Every product carries `price_pkr` (a decimal string, or `null` for "Price not available"), `availability` (`not_confirmed` with "Availability not confirmed" in lists and "Check availability at Oriflame" on detail) and `data_source` / `is_development_data`, so the UI can flag fixture data.
 - Admin endpoints depend on an authentication + authorisation dependency — never publicly accessible.
 - Narrow CORS (`CORS_ORIGINS`), secure headers, and rate limits where appropriate.
 
