@@ -8,6 +8,7 @@
 
 | Date | Mistake Pattern | Root Cause | Rule to Prevent Recurrence |
 |---|---|---|---|
+| 2026-10-26 | Port 8000 still served after stopping `uvicorn --reload` | On Windows the reload worker (a `multiprocessing.spawn` child) outlives its killed parent | After stopping a `--reload` server, check `Get-NetTCPConnection -LocalPort 8000`. Stop the leftover `python ... multiprocessing.spawn` process too, or run without `--reload` for scripted checks |
 | 2026-10-26 | `/status` showed the build-time backend state forever | With `cacheComponents`, a `fetch` (even `cache: "no-store"`) that settles during `next build` is prerendered | Call `await connection()` (`next/server`) at the top of any Server Component that must run per request. Confirm `◐` (Partial Prerender), not `○`, in the build output. Mock it in Vitest |
 | 2026-10-26 | Production frontend reported the backend unavailable while it was up | `NEXT_PUBLIC_*` values are inlined at **build** time; `next start` alone does not read them | Set `NEXT_PUBLIC_API_BASE_URL` before `npm run build` |
 | 2026-10-26 | `npm install -D @vitejs/plugin-react` fails with ERESOLVE (Babel 8 optional peers) | Plugin's optional peer chain conflicts with Next 16's Babel | Not needed: Vitest compiles TSX using `jsx: react-jsx` from tsconfig. Do not add the plugin or use `--legacy-peer-deps` |

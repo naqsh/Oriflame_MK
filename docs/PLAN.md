@@ -36,23 +36,23 @@ Fresh autonomous kickoff only (not every "hi"): then read `docs/KICKOFF-PROMPT.m
 
 ---
 
-## MVP 1: Project Scaffold ⬜
+## MVP 1: Project Scaffold ✅
 
 **Epic:** OR-E1  
-**Branch:** `epic/E1-project-scaffold`  
+**Branch:** `epic/E1-project-scaffold` (PR [naqsh/Oriflame_MK#2](https://github.com/naqsh/Oriflame_MK/pull/2) into `epic/autonomus-implementation`)  
 **Tasks:** 9 — `docs/jira-tickets-json/OR-E1-mvp1-scaffold.json`
 
 | Task ID | Summary | Area | Effort | Depends on | Status | Agent |
 |---|---|---|---|---|---|---|
-| OR-001 | Repository init: git hygiene, env template, tooling pins | Repository / Tooling | S | — | ⬜ | Coding |
-| OR-002 | Typed settings and ConfigProvider interface | Backend | M | OR-001 | ⬜ | Coding |
-| OR-003 | FastAPI application skeleton with layered structure | Backend | M | OR-002 | ⬜ | Coding |
-| OR-004 | SQLAlchemy 2.x session and Alembic initialisation | Backend / Database | M | OR-002 | ⬜ | Coding |
-| OR-005 | Next.js App Router frontend scaffold | Frontend | M | OR-001 | ⬜ | Coding |
-| OR-006 | Typed API client and frontend-backend connectivity | Frontend / Backend | S | OR-003, OR-005 | ⬜ | Coding |
-| OR-007 | Test harnesses: pytest, Vitest, Playwright | Testing | M | OR-003, OR-004, OR-005 | ⬜ | Coding |
-| OR-008 | GitHub Actions CI pipeline | CI/CD | M | OR-007 | ⬜ | Coding |
-| OR-009 | Documentation sync for scaffold | Docs | S | OR-001–OR-008 | ⬜ | Docs |
+| OR-001 | Repository init: git hygiene, env template, tooling pins | Repository / Tooling | S | — | ✅ | Coding |
+| OR-002 | Typed settings and ConfigProvider interface | Backend | M | OR-001 | ✅ | Coding |
+| OR-003 | FastAPI application skeleton with layered structure | Backend | M | OR-002 | ✅ | Coding |
+| OR-004 | SQLAlchemy 2.x session and Alembic initialisation | Backend / Database | M | OR-002 | ✅ | Coding |
+| OR-005 | Next.js App Router frontend scaffold | Frontend | M | OR-001 | ✅ | Coding |
+| OR-006 | Typed API client and frontend-backend connectivity | Frontend / Backend | S | OR-003, OR-005 | ✅ | Coding |
+| OR-007 | Test harnesses: pytest, Vitest, Playwright | Testing | M | OR-003, OR-004, OR-005 | ✅ | Coding |
+| OR-008 | GitHub Actions CI pipeline | CI/CD | M | OR-007 | ✅ | Coding |
+| OR-009 | Documentation sync for scaffold | Docs | S | OR-001–OR-008 | ✅ | Docs |
 
 ---
 
@@ -179,7 +179,7 @@ The MVP is complete when:
 
 | MVP | Epic | Tasks | Completed | Status |
 |---|---|---|---|---|
-| MVP 1 | OR-E1 | 9 | 0 | ⬜ |
+| MVP 1 | OR-E1 | 9 | 9 | ✅ |
 | MVP 2 | OR-E2 | 8 | 0 | ⬜ |
 | MVP 3 | OR-E3 | 11 | 0 | ⬜ |
 | MVP 4 | OR-E4 | 7 | 0 | ⬜ |

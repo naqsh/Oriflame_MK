@@ -60,7 +60,7 @@ co-located AGENT.md files alongside the code they govern.
 
 | Milestone | Scope Summary | Status |
 |---|---|---|
-| **MVP 1** | Project scaffold: Next.js frontend, FastAPI backend, Supabase PostgreSQL + Alembic, typed settings, `.env.example`, CI | ⬜ Planned |
+| **MVP 1** | Project scaffold: Next.js frontend, FastAPI backend, Supabase PostgreSQL + Alembic, typed settings, `.env.example`, CI | ✅ Completed (PR #2) |
 | **MVP 2** | Catalogue data: permitted-source investigation, minimal schema, idempotent sync with sync-run records | ⬜ Planned |
 | **MVP 3** | Storefront: homepage, listing/category pages, product detail, search, filter/sort, local shopping list | ⬜ Planned |
 | **MVP 4** | Referral handoff: `ReferralService`, config provider, host validation, manual-code fallback, click analytics | ⬜ Planned |

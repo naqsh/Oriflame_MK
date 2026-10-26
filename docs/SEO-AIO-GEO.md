@@ -17,8 +17,8 @@ Apply technical SEO, useful content practices for AI-assisted search (AIO/GEO), 
 | Rendering | Server-rendered or statically generated product/category pages where appropriate | `frontend/app/**` |
 | Titles & descriptions | Unique per page | `frontend/lib/seo/` |
 | Canonical URLs | Every indexable page | `frontend/lib/seo/` |
-| Sitemap | XML sitemap of indexable pages | `frontend/app/sitemap.ts` |
-| robots.txt | Disallow admin/private routes | `frontend/app/robots.ts` |
+| Sitemap | XML sitemap of indexable pages | `frontend/app/sitemap.ts` (planned, OR-037) |
+| robots.txt | Disallow admin/private routes | `frontend/app/robots.ts` (planned, OR-037) |
 | Breadcrumbs | Visible + internal links | `components/layout/` |
 | Open Graph | Title, description, image | `frontend/lib/seo/` |
 | Image alt text | Descriptive, based on factual product information | `components/product/` |

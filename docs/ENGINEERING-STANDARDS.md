@@ -51,7 +51,7 @@ Use compatible stable releases and **record the pinned versions here** when MVP 
 | Tailwind CSS | 4.3.3 | CSS-first config in `app/globals.css` |
 | shadcn/ui | 4.22.1 (style base-nova) | No primitives yet; `cn` helper at `lib/utils/cn.ts` |
 | Zod | 4.6.7 | API responses validated in `lib/api/`; extra fields stripped |
-| React Hook Form | _pin at scaffold_ | Where appropriate |
+| React Hook Form | not installed | Add with the first form (no forms in MVP 1) |
 | Vitest / Testing Library / Playwright | Vitest 5.0.5 (+ coverage-v8) / RTL 16.3.3 + user-event / Playwright 1.64.1 (Chromium) | No `@vitejs/plugin-react` (peer conflict; not needed). Coverage: 75% lines, 90% for lib/api and lib/seo |
 
 ### Infrastructure

@@ -4,7 +4,7 @@ An independent, single-vendor product discovery and referral storefront for Orif
 
 > **Disclaimer:** This is an independent referral storefront, **not** the official Oriflame website. It is not affiliated with or endorsed by Oriflame unless explicitly authorised. Checkout, payment, and fulfilment happen on Oriflame's official platform.
 
-**Status:** MVP 1 — planned (see [`docs/PLAN.md`](docs/PLAN.md))  
+**Status:** MVP 1 (project scaffold) is complete on `epic/E1-project-scaffold` and in review in [PR #2](https://github.com/naqsh/Oriflame_MK/pull/2). The app runs (backend health, frontend shell, `/status`), but there are no catalogue, referral or admin features yet. See [`docs/PLAN.md`](docs/PLAN.md).  
 **Repository:** [github.com/naqsh/Oriflame_MK](https://github.com/naqsh/Oriflame_MK)  
 **Version:** 0.1.0 | October 2026
 
@@ -70,12 +70,14 @@ The repository is **public** — never commit `.env`, real consultant codes, or 
 Full instructions: [`docs/guidence/try-it-locally.md`](docs/guidence/try-it-locally.md).
 
 ```bash
-cp .env.example .env          # set POSTGRES_URL (Supabase) and referral values
-uv sync                       # backend dependencies
-uv run alembic upgrade head   # apply migrations to the Supabase database
-uv run uvicorn backend.app.main:create_app --factory --reload
-cd frontend && npm install && npm run dev
+cp .env.example .env          # set POSTGRES_URL (Supabase, password without [ ]) and referral values
+uv sync                       # backend dependencies (Python 3.14 via .python-version)
+uv run alembic upgrade head   # apply migrations to the database in POSTGRES_URL
+uv run uvicorn backend.app.main:create_app --factory --reload   # API on :8000
+cd frontend && npm ci && npm run dev                             # site on :3000 (Node 24)
 ```
+
+Open `http://localhost:3000/status`; it shows "Backend service: healthy" when both are running. Tests and CI: see [`docs/guidence/try-it-locally.md`](docs/guidence/try-it-locally.md) (section 6).
 
 ---
 

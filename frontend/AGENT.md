@@ -16,11 +16,11 @@ This file governs all development within the Next.js (App Router) frontend. The 
 |---|---|---|
 | Next.js | 16.4.3 | React framework with App Router |
 | React | 19.3.0 | UI library (Server Components first) |
-| TypeScript | 5.x | Type safety |
+| TypeScript | 5.9.3 | Type safety (strict, `noUncheckedIndexedAccess`) |
 | Tailwind CSS | 4.3.3 | Utility-first styling |
 | shadcn/ui | 4.22.1 | Accessible UI primitives where useful (add with `npx shadcn@4.22.1 add <name>` only when used) |
-| Zod | 3.x+ | Runtime schema validation |
-| React Hook Form | latest stable | Forms (where appropriate) |
+| Zod | 4.6.7 | Runtime schema validation |
+| React Hook Form | not installed | Forms (add with the first form) |
 | Vitest + Testing Library | 5.0.5 / 16.3.3 | Component/unit tests |
 | Playwright | 1.64.1 | End-to-end tests (config and browsers: OR-007) |
 
@@ -32,36 +32,28 @@ This file governs all development within the Next.js (App Router) frontend. The 
 frontend/
 ├── AGENT.md                    # This file
 ├── app/
-│   ├── layout.tsx              # Root layout, site-wide metadata, Organization/WebSite JSON-LD
-│   ├── page.tsx                # Homepage
-│   ├── products/
-│   │   ├── page.tsx            # Product listing (filter/sort, paginated)
-│   │   └── [slug]/page.tsx     # Product detail page
-│   ├── categories/
-│   │   └── [slug]/page.tsx     # Category page
-│   ├── search/page.tsx         # Search results
-│   ├── referral/page.tsx       # How-to-buy / referral handoff
-│   ├── about/page.tsx
-│   ├── contact/page.tsx
-│   ├── privacy/page.tsx
-│   ├── terms/page.tsx
+│   ├── layout.tsx              # Root layout: html lang, SiteShell, title template + description
+│   ├── page.tsx                # Homepage shell (no catalogue data yet)
 │   ├── status/page.tsx         # Backend status (noindex), request-time BackendStatus
-│   ├── admin/                  # Protected admin views
-│   ├── sitemap.ts              # XML sitemap
-│   └── robots.ts               # robots.txt
+│   ├── globals.css             # Tailwind 4 + shadcn theme tokens
+│   └── (planned) products/, categories/[slug]/, search/, referral/, about/, contact/,
+│       privacy/, terms/, admin/, sitemap.ts, robots.ts (JSON-LD in layout: OR-E5)
 ├── components/
 │   ├── layout/                 # site-header, site-footer (disclaimer), site-shell (landmarks)
-│   ├── product/
-│   ├── search/
-│   ├── filters/
-│   ├── referral/
-│   └── ui/
+│   ├── status/                 # backend-status (Server Component)
+│   └── product/, search/, filters/, referral/, ui/   # (planned; empty, .gitkeep)
 ├── lib/
-│   ├── api/                    # client.ts (fetchJson, ApiError), schemas/, health.ts
-│   ├── seo/                    # site.ts (name, description, disclaimer) + later metadata/JSON-LD builders
+│   ├── api/                    # client.ts (fetchJson, ApiError), schemas/health.ts, health.ts
+│   ├── seo/                    # site.ts (name, description, disclaimer); (planned) metadata/JSON-LD builders
 │   └── utils/                  # cn.ts (shadcn class helper)
-├── types/
-└── __tests__/                  # Vitest specs (incl. NEXT_PUBLIC_ guard)
+├── types/                      # (planned; empty, .gitkeep)
+├── __tests__/                  # Vitest specs (incl. NEXT_PUBLIC_ guard, network guard)
+├── e2e/                        # Playwright smoke specs
+├── next.config.ts              # cacheComponents, empty images.remotePatterns
+├── vitest.config.mts           # jsdom, coverage thresholds (75%; 90% lib/api, lib/seo)
+├── vitest.setup.ts             # jest-dom, cleanup, fetch blocked unless stubbed
+├── playwright.config.ts        # Starts backend + Next dev server
+└── components.json             # shadcn config (utils alias @/lib/utils/cn)
 ```
 
 Adjust structure when useful, but keep modules cohesive and avoid oversized files.
