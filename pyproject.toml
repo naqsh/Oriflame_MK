@@ -17,9 +17,13 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "httpx>=0.28.1",
     "httpx2>=2.16.0",
     "mypy>=2.4.0",
     "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.1",
+    "pytest-cov>=7.1.0",
+    "pytest-socket>=0.8.1",
     "ruff>=0.17.2",
 ]
 
@@ -55,3 +59,17 @@ warn_required_dynamic_aliases = true
 [tool.pytest.ini_options]
 testpaths = ["backend/tests"]
 pythonpath = ["."]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+markers = ["db: needs a real PostgreSQL via TEST_POSTGRES_URL (fails with a setup message if unset)"]
+# Block outbound network from Python sockets (Oriflame must never be hit in tests).
+# libpq (psycopg) uses its own sockets, so the test database still works.
+addopts = "--allow-hosts=127.0.0.1,::1,localhost --cov --cov-report=term-missing:skip-covered"
+
+[tool.coverage.run]
+source = ["backend/app"]
+branch = true
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true

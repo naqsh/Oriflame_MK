@@ -111,10 +111,39 @@ npm run lint && npm run typecheck && npm run test && npm run build
 
 ## 6. Run Checks
 
+### Test database (required for `uv run pytest`)
+
+Tests marked `db` need a throwaway PostgreSQL. Without one they **fail** with a setup message; they are never silently skipped. Start one with Docker:
+
+```bash
+docker run -d --name oriflame-test-db -e POSTGRES_PASSWORD=postgres -p 54329:5432 postgres:17
+```
+
+Then set `TEST_POSTGRES_URL=postgresql://postgres:postgres@localhost:54329/postgres` in `.env` or the environment. `supabase start` also works, using its local URL.
+
+The suite refuses to run when `TEST_POSTGRES_URL` equals `POSTGRES_URL` or points at a hosted Supabase host. It downgrades and re-migrates that database once per session, and each test runs in a rolled-back transaction.
+
+### Commands
+
 ```bash
 uv run ruff check backend && uv run ruff format backend && uv run mypy backend && uv run pytest
 cd frontend && npm run lint && npm run typecheck && npm run test && npm run build
 ```
+
+- `uv run pytest` reports coverage for `backend/app` and fails below 80%. Run `uv run pytest -m "not db"` for a quick run without a database; the full gate still needs the `db` tests.
+- On this Windows setup, run mypy as `uv run python -m mypy backend` (Application Control blocks `mypy.exe`).
+- `npm run test` runs Vitest with coverage: at least 75% overall and 90% for `lib/api` and `lib/seo`.
+- Tests never reach the internet. pytest blocks Python sockets except to localhost, and Vitest rejects any `fetch` a test has not stubbed.
+
+### End-to-end (Playwright)
+
+```bash
+cd frontend
+npx playwright install chromium   # once
+npm run test:e2e
+```
+
+`playwright.config.ts` starts the FastAPI backend (port 8000, placeholder settings, no database needed) and the Next.js dev server (port 3000), then runs `e2e/`. It reuses servers already running locally.
 
 ---
 

@@ -1,15 +1,17 @@
 """Liveness and readiness endpoints (OR-003)."""
 
-import os
 import time
 
+import httpx
 import pytest
 from fastapi import FastAPI, status
 from fastapi.testclient import TestClient
+from sqlalchemy import Engine
 from structlog.testing import capture_logs
 
 from backend.app.core.config import load_settings
 from backend.app.db.session import create_db_engine, get_engine
+from backend.app.main import create_app
 from backend.app.services.health import ReadinessService, get_readiness_service
 
 # Closed local port: connection is refused immediately.
@@ -72,16 +74,21 @@ def test_readiness_check_is_bounded_by_connect_timeout(monkeypatch: pytest.Monke
     assert time.perf_counter() - started < 5
 
 
-@pytest.mark.skipif(
-    not os.environ.get("TEST_POSTGRES_URL"),
-    reason="Needs a real PostgreSQL via TEST_POSTGRES_URL (CI service container, OR-007)",
-)
+@pytest.mark.db
 def test_readiness_ok_against_real_database(
-    monkeypatch: pytest.MonkeyPatch, client: TestClient
+    monkeypatch: pytest.MonkeyPatch, migrated_engine: Engine, test_database_url: str
 ) -> None:
-    monkeypatch.setenv("POSTGRES_URL", os.environ["TEST_POSTGRES_URL"])
+    monkeypatch.setenv("POSTGRES_URL", test_database_url)
+    client = TestClient(create_app())
 
     response = client.get("/health/ready")
 
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {"status": "ready", "database": "ok"}
+
+
+async def test_liveness_via_async_client(async_client: httpx.AsyncClient) -> None:
+    response = await async_client.get("/health")
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == {"status": "ok"}

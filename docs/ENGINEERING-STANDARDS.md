@@ -35,9 +35,9 @@ Use compatible stable releases and **record the pinned versions here** when MVP 
 | SQLAlchemy | 2.1.6 | Typed declarative models |
 | Alembic | 1.20.1 | `alembic.ini` at repo root; scripts in `backend/alembic/`; ruff-formats new revisions |
 | psycopg[binary] | 3.3.6 | `POSTGRES_URL` normalised to `postgresql+psycopg://`; `sslmode=require` for Supabase |
-| httpx / httpx2 | httpx2 2.16.0 (test client; Starlette deprecates httpx there) | Outbound httpx pinned when the first outbound call lands; explicit timeouts |
+| httpx / httpx2 | httpx 0.28.1 (AsyncClient tests) / httpx2 2.16.0 (Starlette TestClient) | Outbound httpx pinned when the first outbound call lands; explicit timeouts |
 | structlog | 26.1.0 | JSON to stdout, `format_exc_info` (no locals in tracebacks) |
-| pytest / pytest-cov | pytest 9.1.1 (pytest-cov not yet added) | |
+| pytest / pytest-cov | pytest 9.1.1 / pytest-cov 7.1.0 (coverage 7.17.0, fail_under 80) | pytest-asyncio 1.4.1 (auto mode), pytest-socket 0.8.1 (localhost only); `db` marker needs TEST_POSTGRES_URL |
 | ruff / mypy | ruff 0.17.2 / mypy 2.4.0 | Run mypy as `uv run python -m mypy` on Windows (see lessons) |
 
 ### Frontend (TypeScript)
@@ -51,7 +51,7 @@ Use compatible stable releases and **record the pinned versions here** when MVP 
 | shadcn/ui | 4.22.1 (style base-nova) | No primitives yet; `cn` helper at `lib/utils/cn.ts` |
 | Zod | 4.6.7 | API responses validated in `lib/api/`; extra fields stripped |
 | React Hook Form | _pin at scaffold_ | Where appropriate |
-| Vitest / Testing Library / Playwright | Vitest 5.0.5 / RTL 16.3.3 / Playwright 1.64.1 | No `@vitejs/plugin-react` (peer conflict; not needed for tests). Playwright browsers and config: OR-007 |
+| Vitest / Testing Library / Playwright | Vitest 5.0.5 (+ coverage-v8) / RTL 16.3.3 + user-event / Playwright 1.64.1 (Chromium) | No `@vitejs/plugin-react` (peer conflict; not needed). Coverage: 75% lines, 90% for lib/api and lib/seo |
 
 ### Infrastructure
 

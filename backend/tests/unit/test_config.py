@@ -24,6 +24,7 @@ FAKE_CODE = "TEST-CODE-123456"
 
 def test_valid_config_loads_with_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("CORS_ORIGINS")
+    monkeypatch.delenv("APP_ENV")
 
     settings = load_settings()
 
