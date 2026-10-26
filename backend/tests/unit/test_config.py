@@ -130,6 +130,20 @@ def test_unknown_referral_method_rejected(monkeypatch: pytest.MonkeyPatch) -> No
         load_settings()
 
 
+def test_catalogue_source_defaults_to_fixture() -> None:
+    assert load_settings().catalogue_source == "fixture"
+
+
+@pytest.mark.parametrize("value", ["oriflame_scraper", "pk.oriflame.com", ""])
+def test_unknown_catalogue_source_rejected_at_startup(
+    monkeypatch: pytest.MonkeyPatch, value: str
+) -> None:
+    monkeypatch.setenv("CATALOGUE_SOURCE", value)
+
+    with pytest.raises(ConfigurationError, match="CATALOGUE_SOURCE"):
+        load_settings()
+
+
 def test_consultant_code_never_in_repr(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("ORIFLAME_CONSULTANT_CODE", FAKE_CODE)
 

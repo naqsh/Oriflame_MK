@@ -34,6 +34,9 @@ _ACCEPTED_POSTGRES_SCHEMES = frozenset({"postgres", "postgresql", SQLALCHEMY_POS
 
 AppEnv = Literal["development", "test", "production"]
 ReferralMethod = Literal["official_url", "manual_code"]
+# Catalogue sources (ADR-001). Only development fixtures until a permitted source is
+# accepted; adding one means a new name here plus an adapter in integrations/oriflame/.
+CatalogueSourceName = Literal["fixture"]
 
 
 class ConfigurationError(RuntimeError):
@@ -107,6 +110,7 @@ class Settings(BaseSettings):
     oriflame_consultant_code: SecretStr | None = None
     oriflame_referral_url: HttpUrl | None = None
     oriflame_referral_method: ReferralMethod = "official_url"
+    catalogue_source: CatalogueSourceName = "fixture"
 
     @field_validator("postgres_url", mode="before")
     @classmethod

@@ -37,7 +37,7 @@ As the codebase develops, add examples for:
 - [ ] `api-endpoint-pattern.py` — Paginated, typed FastAPI endpoint
 - [ ] `settings-pattern.py` — Pydantic Settings behind a `ConfigProvider`
 - [ ] `referral-service-pattern.py` — Server-side referral resolution + validation
-- [ ] `upsert-pattern.py` — Idempotent upsert keyed on source id
+- [x] `upsert-pattern.py` — Idempotent upsert keyed on source id (OR-017; condensed from `backend/app/repositories/products.py`)
 - [ ] `admin-dependency-pattern.py` — Admin authN/authZ dependency
 
 ### Frontend (TypeScript)

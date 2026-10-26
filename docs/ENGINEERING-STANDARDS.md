@@ -35,7 +35,7 @@ Use compatible stable releases and **record the pinned versions here** when MVP 
 | SQLAlchemy | 2.1.6 | Typed declarative models |
 | Alembic | 1.20.1 | `alembic.ini` at repo root; scripts in `backend/alembic/`; ruff-formats new revisions |
 | psycopg[binary] | 3.3.6 | `POSTGRES_URL` normalised to `postgresql+psycopg://`; `sslmode=require` for Supabase |
-| httpx / httpx2 | httpx 0.28.1 (AsyncClient tests) / httpx2 2.16.0 (Starlette TestClient) | Outbound httpx pinned when the first outbound call lands; explicit timeouts |
+| httpx / httpx2 | httpx 0.28.1 (runtime `FeedHttpClient`; AsyncClient and `MockTransport` in tests) / httpx2 2.16.0 (Starlette TestClient) | Runtime dependency since OR-013; explicit connect/read timeouts on every request |
 | structlog | 26.1.0 | JSON to stdout, `format_exc_info` (no locals in tracebacks) |
 | pytest / pytest-cov | pytest 9.1.1 / pytest-cov 7.1.0 (coverage 7.17.0, fail_under 80) | pytest-asyncio 1.4.1 (auto mode), pytest-socket 0.8.1 (localhost only); `db` marker needs TEST_POSTGRES_URL |
 | ruff / mypy | ruff 0.17.2 / mypy 2.4.0 | Run mypy as `uv run python -m mypy` on Windows (see lessons) |
@@ -83,6 +83,9 @@ ORIFLAME_CONSULTANT_CODE=
 ORIFLAME_REFERRAL_URL=
 ORIFLAME_REFERRAL_METHOD=official_url
 
+# Catalogue source (ADR-001): only "fixture" until a permitted source is accepted
+CATALOGUE_SOURCE=fixture
+
 # Tests only — local PostgreSQL, never the Supabase project
 TEST_POSTGRES_URL=postgresql://postgres:postgres@localhost:54322/postgres
 ```
@@ -100,6 +103,7 @@ Rules:
 - One typed `Settings` class in `backend/app/core/config.py`, validated once at startup.
 - `POSTGRES_URL` is a required `SecretStr`; scheme normalised to `postgresql+psycopg://`; never logged.
 - `ORIFLAME_REFERRAL_METHOD` is a `Literal["official_url", "manual_code"]`.
+- `CATALOGUE_SOURCE` is a `Literal["fixture"]`; unknown values fail at startup. Fixtures refuse to load in production.
 - `ORIFLAME_REFERRAL_URL` is validated as HTTPS with an allow-listed official Oriflame host.
 - Settings are consumed through a `ConfigProvider` interface (env provider for the MVP).
 

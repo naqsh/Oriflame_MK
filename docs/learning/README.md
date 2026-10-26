@@ -8,6 +8,12 @@
 
 The `docs/learning/` directory is used to capture new techniques, non-trivial bug fixes, and architectural patterns discovered during implementation.
 
+## Index
+
+| Date | Learning |
+|---|---|
+| 2026-10 | [Idempotent catalogue upserts](2026-10-idempotent-catalogue-upserts.md) (OR-E2) |
+
 ## When to create a learning file
 
 - Introducing a new technique (e.g. idempotent catalogue upserts, JSON-LD generation)

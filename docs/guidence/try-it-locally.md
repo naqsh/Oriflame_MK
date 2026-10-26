@@ -35,6 +35,8 @@ ORIFLAME_COUNTRY=PK
 ORIFLAME_CONSULTANT_CODE=
 ORIFLAME_REFERRAL_URL=
 ORIFLAME_REFERRAL_METHOD=official_url
+
+CATALOGUE_SOURCE=fixture
 ```
 
 Leave referral values empty locally unless you have real, approved values. Never commit `.env`.
@@ -78,7 +80,23 @@ API at `http://localhost:8000`; liveness at `/health`, readiness (database check
 
 ## 4. Development Catalogue (optional)
 
-Until a permitted source is configured, load the explicitly named development fixtures (command defined in MVP 2). Fixture data is never presented as live Oriflame data.
+No permitted Oriflame source is confirmed yet (ADR-001), so load the development fixtures (12 placeholder products in `backend/fixtures/dev_catalogue_sample.json`). They are stored with `source = dev_fixture` and are never presented as live Oriflame data.
+
+```bash
+uv run python -m backend.app.cli sync --fixtures
+```
+
+The command prints the run id, status and counts. A second run reports `unchanged=12`.
+
+| Exit code | Meaning |
+|---|---|
+| 0 | `success` or `partial` (the printed detail lists skipped records) |
+| 1 | `failed`, the source is unusable, or a database error. The message never shows `POSTGRES_URL` |
+| 2 | Usage or configuration error, e.g. `--fixtures` with `APP_ENV=production` |
+| 3 | Another sync is already running |
+| 4 | Products from another source exist. `--force-dev` overrides this, with `APP_ENV=development` only |
+
+`uv run python -m backend.app.cli sync` (without `--fixtures`) uses `CATALOGUE_SOURCE`, which is `fixture` today.
 
 ---
 
