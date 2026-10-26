@@ -14,15 +14,15 @@ This file governs all development within the Next.js (App Router) frontend. The 
 
 | Technology | Version | Purpose |
 |---|---|---|
-| Next.js | latest stable | React framework with App Router |
-| React | latest stable | UI library (Server Components first) |
+| Next.js | 16.4.3 | React framework with App Router |
+| React | 19.3.0 | UI library (Server Components first) |
 | TypeScript | 5.x | Type safety |
-| Tailwind CSS | latest stable | Utility-first styling |
-| shadcn/ui | — | Accessible UI primitives where useful |
+| Tailwind CSS | 4.3.3 | Utility-first styling |
+| shadcn/ui | 4.22.1 | Accessible UI primitives where useful (add with `npx shadcn@4.22.1 add <name>` only when used) |
 | Zod | 3.x+ | Runtime schema validation |
 | React Hook Form | latest stable | Forms (where appropriate) |
-| Vitest + Testing Library | latest stable | Component/unit tests |
-| Playwright | latest stable | End-to-end tests |
+| Vitest + Testing Library | 5.0.5 / 16.3.3 | Component/unit tests |
+| Playwright | 1.64.1 | End-to-end tests (config and browsers: OR-007) |
 
 ---
 
@@ -49,7 +49,7 @@ frontend/
 │   ├── sitemap.ts              # XML sitemap
 │   └── robots.ts               # robots.txt
 ├── components/
-│   ├── layout/
+│   ├── layout/                 # site-header, site-footer (disclaimer), site-shell (landmarks)
 │   ├── product/
 │   ├── search/
 │   ├── filters/
@@ -57,10 +57,10 @@ frontend/
 │   └── ui/
 ├── lib/
 │   ├── api/                    # Typed API client + Zod schemas
-│   ├── seo/                    # Metadata + JSON-LD builders
-│   └── utils/
+│   ├── seo/                    # site.ts (name, description, disclaimer) + later metadata/JSON-LD builders
+│   └── utils/                  # cn.ts (shadcn class helper)
 ├── types/
-└── __tests__/
+└── __tests__/                  # Vitest specs (incl. NEXT_PUBLIC_ guard)
 ```
 
 Adjust structure when useful, but keep modules cohesive and avoid oversized files.

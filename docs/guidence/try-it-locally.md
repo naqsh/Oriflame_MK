@@ -90,7 +90,13 @@ npm install
 npm run dev
 ```
 
-Site at `http://localhost:3000`.
+Site at `http://localhost:3000`. Requires Node 24 (`.nvmrc`).
+
+Frontend checks (run from `frontend/`):
+
+```bash
+npm run lint && npm run typecheck && npm run test && npm run build
+```
 
 ---
 

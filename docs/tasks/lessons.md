@@ -8,6 +8,8 @@
 
 | Date | Mistake Pattern | Root Cause | Rule to Prevent Recurrence |
 |---|---|---|---|
+| 2026-10-26 | `npm install -D @vitejs/plugin-react` fails with ERESOLVE (Babel 8 optional peers) | Plugin's optional peer chain conflicts with Next 16's Babel | Not needed: Vitest compiles TSX using `jsx: react-jsx` from tsconfig. Do not add the plugin or use `--legacy-peer-deps` |
+| 2026-10-26 | Vitest file using `import.meta.url` with `fileURLToPath` throws under jsdom | jsdom environment's `import.meta.url` is not a `file:` URL | Put `// @vitest-environment node` on tests that only touch the filesystem |
 | 2026-10-26 | `uv run mypy` fails with "An Application Control policy has blocked this file" | Windows Application Control blocks the `mypy.exe` launcher in `.venv/Scripts` | On this machine run `uv run python -m mypy backend` (the same applies to any blocked tool launcher) |
 
 ---
