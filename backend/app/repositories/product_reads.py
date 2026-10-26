@@ -45,6 +45,8 @@ def _filters(query: ProductQuery) -> list[ColumnElement[bool]]:
     conditions: list[ColumnElement[bool]] = [Product.is_visible.is_(True)]
     if query.category is not None:
         conditions.append(_in_categories(_category_and_descendant_ids(query.category)))
+    if query.featured is not None:
+        conditions.append(Product.is_featured.is_(query.featured))
     # A NULL price never matches a price filter.
     if query.min_price is not None:
         conditions.append(Product.price_pkr >= query.min_price)

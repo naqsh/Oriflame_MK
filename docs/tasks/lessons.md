@@ -15,6 +15,7 @@
 | 2026-10-26 | Vitest file using `import.meta.url` with `fileURLToPath` throws under jsdom | jsdom environment's `import.meta.url` is not a `file:` URL | Put `// @vitest-environment node` on tests that only touch the filesystem |
 | 2026-10-26 | SQLAlchemy 2.1 warned `Result.tuples()` / `Row.tuple()` are deprecated | Rows behave like tuples since 2.1 | Unpack rows directly (`for a, b in result`, `x, y = row`). Run `pytest -W error::DeprecationWarning` before marking done |
 | 2026-10-26 | Pydantic `HttpUrl` field typed as `AfterValidator(str)` still made mypy require `HttpUrl` at call sites | The annotation's base type, not the validator's return, drives the signature | Annotate as `str` and validate inside `AfterValidator` with a `TypeAdapter(HttpUrl)` |
+| 2026-10-27 | LCP and FCP read from the in-app browser came out as 7 s and 22 s while TTFB was 20 ms | The browser pane was hidden, so the page did not paint until a screenshot forced it; streamed Suspense content was also held back | Do not record paint metrics from a hidden pane. Use TTFB, `responseEnd`, CLS and the LCP *element*, or run Lighthouse in a visible browser. Check server HTML with `curl` before suspecting a rendering bug |
 | 2026-10-26 | `uv run mypy` fails with "An Application Control policy has blocked this file" | Windows Application Control blocks the `mypy.exe` launcher in `.venv/Scripts` | On this machine run `uv run python -m mypy backend` (the same applies to any blocked tool launcher) |
 
 ---

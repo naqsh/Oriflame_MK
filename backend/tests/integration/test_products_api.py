@@ -315,3 +315,17 @@ def test_invalid_slug_is_rejected_before_the_database(
     assert api.get(f"/api/v1/products/{slug}").status_code == (
         status.HTTP_422_UNPROCESSABLE_CONTENT
     )
+
+
+def test_featured_filter(api: TestClient, db_session: Session, catalogue: dict[str, Any]) -> None:
+    db_session.execute(
+        text("UPDATE products SET is_featured = true WHERE name IN ('Birch Cream', 'Elm Hidden')")
+    )
+    featured = api.get("/api/v1/products", params={"featured": "true"})
+    assert _names(featured) == ["Birch Cream"]  # hidden products stay hidden
+    others = api.get("/api/v1/products", params={"featured": "false"})
+    assert "Birch Cream" not in _names(others)
+    assert others.json()["total"] == 4
+    assert api.get("/api/v1/products", params={"featured": "maybe"}).status_code == (
+        status.HTTP_422_UNPROCESSABLE_CONTENT
+    )

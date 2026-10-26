@@ -53,6 +53,16 @@ describe("catalogue API functions", () => {
     });
   });
 
+  it("getProducts sends featured as true or false", async () => {
+    const fetchMock = stubFetch(jsonResponse(PAGE));
+    await getProducts({ featured: true });
+    expect(requestedUrl(fetchMock).searchParams.get("featured")).toBe("true");
+
+    const again = stubFetch(jsonResponse(PAGE));
+    await getProducts({ featured: false });
+    expect(requestedUrl(again).searchParams.get("featured")).toBe("false");
+  });
+
   it("getProducts sends no query string when there are no parameters", async () => {
     const fetchMock = stubFetch(jsonResponse(PAGE));
     await getProducts({ category: "", minPrice: undefined });

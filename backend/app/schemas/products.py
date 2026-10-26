@@ -26,6 +26,8 @@ class ProductQuery(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     category: Slug | None = None
+    # true: only products the owner marked featured; false: only the others.
+    featured: bool | None = None
     min_price: Decimal | None = Field(default=None, ge=0, max_digits=12, decimal_places=2)
     max_price: Decimal | None = Field(default=None, ge=0, max_digits=12, decimal_places=2)
     sort: ProductSort = "name_asc"

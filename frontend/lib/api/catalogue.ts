@@ -16,6 +16,7 @@ export type ProductSort = "name_asc" | "name_desc" | "price_asc" | "price_desc" 
 
 export interface ProductListParams {
   category?: string;
+  featured?: boolean;
   minPrice?: string;
   maxPrice?: string;
   sort?: ProductSort;
@@ -42,6 +43,7 @@ function queryString(params: Record<string, string | number | undefined>): strin
 export function getProducts(params: ProductListParams = {}): Promise<ProductPage> {
   const query = queryString({
     category: params.category,
+    featured: params.featured === undefined ? undefined : String(params.featured),
     min_price: params.minPrice,
     max_price: params.maxPrice,
     sort: params.sort,

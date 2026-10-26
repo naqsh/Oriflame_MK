@@ -231,7 +231,7 @@ Why each step is there: [`docs/learning/2026-10-idempotent-catalogue-upserts.md`
 
 | Endpoint | Behaviour |
 |---|---|
-| `GET /api/v1/products` | Visible products only. `category` (slug; includes subcategories), `min_price`/`max_price` (products without a price never match), `sort` (`name_asc` default, `name_desc`, `price_asc`, `price_desc`, `newest`; unknown prices last), `page` (from 1), `page_size` (1 to 100, default 24). Returns `{items, total, page, page_size}`; a page past the end returns empty `items` with the real `total`. An unknown category returns no items |
+| `GET /api/v1/products` | Visible products only. `category` (slug; includes subcategories), `featured` (`true`: only `is_featured`; `false`: only the others), `min_price`/`max_price` (products without a price never match), `sort` (`name_asc` default, `name_desc`, `price_asc`, `price_desc`, `newest`; unknown prices last), `page` (from 1), `page_size` (1 to 100, default 24). Returns `{items, total, page, page_size}`; a page past the end returns empty `items` with the real `total`. An unknown category returns no items |
 | `GET /api/v1/products/{slug}` | Detail with images (by position), categories, `sku`, `description`, `source_url`, `last_synced_at` and up to 4 `related` products (shared category, by name). Hidden or unknown slugs return 404 `{"detail": "Product not found"}` |
 
 ### Availability (OR-021)

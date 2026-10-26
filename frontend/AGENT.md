@@ -33,12 +33,13 @@ frontend/
 ├── AGENT.md                    # This file
 ├── app/
 │   ├── layout.tsx              # Root layout: html lang, SiteShell, title template + description
-│   ├── page.tsx                # Homepage shell (no catalogue data yet)
+│   ├── page.tsx                # Homepage: static hero + how-it-works, HomeCatalogue streamed per request
 │   ├── status/page.tsx         # Backend status (noindex), request-time BackendStatus
 │   ├── globals.css             # Tailwind 4 + shadcn theme tokens
 │   └── (planned) products/, categories/[slug]/, search/, referral/, about/, contact/,
 │       privacy/, terms/, admin/, sitemap.ts, robots.ts (JSON-LD in layout: OR-E5)
 ├── components/
+│   ├── home/                   # home-catalogue (featured or latest products, categories), how-it-works
 │   ├── layout/                 # site-header (search + category nav), site-footer (disclaimer), site-shell,
 │   │                           # category-nav (request-time, omitted if the API fails), dev-data-banner
 │   ├── product/                # price, availability-badge, product-image, product-card, product-grid
@@ -77,6 +78,14 @@ Adjust structure when useful, but keep modules cohesive and avoid oversized file
 | `CategoryNav` | Request-time (`connection()`) inside `Suspense` in the header; top-level categories with products; omitted, with a log line, if the API fails. Because of it every route is a Partial Prerender (`◐`) |
 
 All of these are Server Components; none needs `"use client"`.
+
+### Homepage rendering (OR-023)
+
+- **Static shell:** the hero (`h1`) and "How it works" are prerendered. The `h1` is the LCP element, so the largest paint never waits for the backend.
+- **Streamed catalogue:** `HomeCatalogue` calls `connection()` and renders per request inside `Suspense`, with a grid-sized skeleton as the fallback. It shows featured products (`featured=true`); if the owner has featured none, it shows the 8 newest under "Latest products". It also shows "Shop by category" for top-level categories that have products.
+- **States:** an empty catalogue shows "No products are listed yet"; a backend failure shows "The catalogue is temporarily unavailable" and logs `home_catalogue_failed`; the rest of the page still renders.
+- **Why not ISR (`use cache` + `cacheLife`) yet:** a cached function runs during `next build`, and the build (CI and local) has no backend, so it would fail or cache the unavailable state. Revisit with OR-052 (hosting): once the deploy build can reach the API, wrap the data loaders in `"use cache"` with `cacheLife("minutes")` and tag them for revalidation after a catalogue sync.
+- **Branding:** no Oriflame logos or trademark-style branding; the wording says "independent storefront" and that checkout happens on Oriflame's official website. A test rejects "official store", "authorised seller" and similar claims.
 
 ---
 
