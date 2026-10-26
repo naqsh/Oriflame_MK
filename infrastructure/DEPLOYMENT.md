@@ -26,7 +26,7 @@
 | `ORIFLAME_REFERRAL_URL` | Backend | Official Oriflame host, validated at startup |
 | `ORIFLAME_REFERRAL_METHOD` | Backend | `official_url` or `manual_code` |
 | Admin auth secrets | Backend | Per chosen admin auth (ADR) |
-| API base URL | Frontend | Public backend URL (no secrets) |
+| API base URL (`NEXT_PUBLIC_API_BASE_URL`) | Frontend **build** | Public backend URL (no secrets). Next.js inlines it at build time, so set it before `npm run build`. Required in production: without it `/status` reports the backend unavailable |
 
 ---
 

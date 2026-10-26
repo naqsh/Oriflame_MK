@@ -45,6 +45,7 @@ frontend/
 │   ├── contact/page.tsx
 │   ├── privacy/page.tsx
 │   ├── terms/page.tsx
+│   ├── status/page.tsx         # Backend status (noindex), request-time BackendStatus
 │   ├── admin/                  # Protected admin views
 │   ├── sitemap.ts              # XML sitemap
 │   └── robots.ts               # robots.txt
@@ -56,7 +57,7 @@ frontend/
 │   ├── referral/
 │   └── ui/
 ├── lib/
-│   ├── api/                    # Typed API client + Zod schemas
+│   ├── api/                    # client.ts (fetchJson, ApiError), schemas/, health.ts
 │   ├── seo/                    # site.ts (name, description, disclaimer) + later metadata/JSON-LD builders
 │   └── utils/                  # cn.ts (shadcn class helper)
 ├── types/

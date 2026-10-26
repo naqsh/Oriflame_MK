@@ -92,6 +92,15 @@ npm run dev
 
 Site at `http://localhost:3000`. Requires Node 24 (`.nvmrc`).
 
+The frontend calls the backend at `NEXT_PUBLIC_API_BASE_URL`. In `npm run dev` it defaults to `http://localhost:8000`. For a production build (`npm run build && npm start`), set it **before building**, because Next.js inlines it:
+
+```bash
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8000 npm run build
+npm start
+```
+
+Check the connection at `http://localhost:3000/status` (noindex). It shows "Backend service: healthy" when the backend from step 3 is running, and a friendly "unavailable" message otherwise.
+
 Frontend checks (run from `frontend/`):
 
 ```bash

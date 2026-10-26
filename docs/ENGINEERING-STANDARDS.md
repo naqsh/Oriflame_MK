@@ -49,7 +49,7 @@ Use compatible stable releases and **record the pinned versions here** when MVP 
 | TypeScript | 5.9.3 | `strict`, `noUncheckedIndexedAccess`, `noImplicitReturns` |
 | Tailwind CSS | 4.3.3 | CSS-first config in `app/globals.css` |
 | shadcn/ui | 4.22.1 (style base-nova) | No primitives yet; `cn` helper at `lib/utils/cn.ts` |
-| Zod | _pin at OR-006_ | |
+| Zod | 4.6.7 | API responses validated in `lib/api/`; extra fields stripped |
 | React Hook Form | _pin at scaffold_ | Where appropriate |
 | Vitest / Testing Library / Playwright | Vitest 5.0.5 / RTL 16.3.3 / Playwright 1.64.1 | No `@vitejs/plugin-react` (peer conflict; not needed for tests). Playwright browsers and config: OR-007 |
 
