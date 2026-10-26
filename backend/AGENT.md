@@ -22,7 +22,7 @@ This file governs all development within the FastAPI backend, including REST end
 | Alembic | 1.20.1 | Schema migrations |
 | Supabase (PostgreSQL) | per project | Persistent database (`POSTGRES_URL`) — see `docs/DATABASE.md` |
 | psycopg[binary] | 3.3.6 | PostgreSQL driver (`postgresql+psycopg://`, `sslmode=require`) |
-| httpx | 0.28.1 (tests only so far) | Outbound HTTP (with timeouts) when the first integration lands |
+| httpx | 0.28.1 | Runtime: `FeedHttpClient` for a future permitted feed (explicit timeouts); tests: `AsyncClient`, `MockTransport` |
 | structlog | 26.1.0 | Structured logging |
 
 Use compatible stable releases and record the pinned versions in `docs/ENGINEERING-STANDARDS.md`. Redis/background jobs only when justified by actual requirements.
@@ -66,7 +66,11 @@ backend/
 │   │   ├── health.py           # ReadinessService (SELECT 1); (planned) products, availability, referral (ReferralService)
 │   │   └── slugs.py            # slugify + deterministic collision suffix (source id)
 │   ├── integrations/
-│   │   └── oriflame/           # (planned, OR-E2) permitted-source client + idempotent catalogue sync
+│   │   └── oriflame/
+│   │       ├── __init__.py     # get_catalogue_source(settings) - picks the CATALOGUE_SOURCE adapter
+│   │       ├── client.py       # CatalogueSource Protocol, SourceError family, InvalidRecord, parse_records
+│   │       ├── fixtures.py     # FixtureCatalogueSource (dev_fixture; refuses APP_ENV=production)
+│   │       └── http.py         # FeedHttpClient: timeouts, bounded retries, Retry-After, no auth bypass
 │   └── main.py                 # create_app() factory, CORS, 500 handler
 ├── alembic/
 │   ├── env.py                  # URL from Settings, skips Supabase-managed schemas, URL-free errors
@@ -76,7 +80,7 @@ backend/
 │       └── 002_catalogue_schema.py  # Catalogue tables + sync_run_status enum; RLS on each
 └── tests/
     ├── conftest.py             # clean_env, app/client/async_client, TEST_POSTGRES_URL db fixtures
-    ├── unit/                   # config, db session, slugs, catalogue schemas
+    ├── unit/                   # config, db session, slugs, catalogue schemas, sources (fixture, mocked HTTP)
     ├── integration/            # health, request context, migrations, catalogue schema + repositories (db)
     └── security/               # CORS, outbound network blocked
 ```
@@ -181,6 +185,8 @@ Supabase PostgreSQL + Alembic. Every table in `public` gets `ENABLE ROW LEVEL SE
 Use unique constraints, foreign keys, and indexes for product slug, SKU/source ID, category, and searchable fields. ✅ = created by `002_catalogue_schema`.
 
 **Catalogue upserts** (`repositories/`, OR-012): `INSERT ... ON CONFLICT (source_id) DO UPDATE ... WHERE` the source-owned fields (`sku`, `name`, `description`, `price_pkr`, `source_url`) differ; `xmax = 0` in `RETURNING` tells created from updated. With no field change only `last_synced_at` moves; `updated_at` moves only when a field, image or category link changed. A sync never overwrites `slug`, `is_visible` or `is_featured`. Images are replaced only when the ordered list differs. Unknown category ids are skipped and reported, never created. Category parents are linked in a second pass, so record order cannot violate the foreign key. Only one sync may run at a time: `catalogue_sync_lock` takes a PostgreSQL advisory lock on its own connection and raises `SyncAlreadyRunningError` otherwise.
+
+**Catalogue sources** (`integrations/oriflame/`, OR-013): the sync sees only the `CatalogueSource` Protocol (`name`, `iter_categories()`, `iter_products()`). Each item is a validated record or an `InvalidRecord` (problems listed without input values); whole-source failures raise `SourceAuthError` (401/403, never retried), `SourceRateLimitedError`, `SourceUnavailableError`, `SourceMalformedError` or `SourcePageError` (a later page failed: the run is partial). `CATALOGUE_SOURCE` accepts only `fixture` until ADR-001 accepts a permitted source; any other value fails at startup. No integration code targets Oriflame's hosts, and a test enforces it.
 
 **Slugs** (`services/slugs.py`): `slugify(name)`; when another source row already holds it, append `-{slugify(source_id)}`. Source ids are unique, so the result does not depend on sync order. A numeric suffix is a last resort. Truncated to 200 characters with the suffix kept. Avoid storing customer personal data unless a feature genuinely requires it.
 

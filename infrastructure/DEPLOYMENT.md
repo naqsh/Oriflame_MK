@@ -25,6 +25,7 @@
 | `ORIFLAME_CONSULTANT_CODE` | Backend | Server-side only |
 | `ORIFLAME_REFERRAL_URL` | Backend | Official Oriflame host, validated at startup |
 | `ORIFLAME_REFERRAL_METHOD` | Backend | `official_url` or `manual_code` |
+| `CATALOGUE_SOURCE` | Backend | Only `fixture` exists until ADR-001 accepts a permitted source, and fixtures refuse to load in production, so a production catalogue sync cannot run yet |
 | Admin auth secrets | Backend | Per chosen admin auth (ADR) |
 | API base URL (`NEXT_PUBLIC_API_BASE_URL`) | Frontend **build** | Public backend URL (no secrets). Next.js inlines it at build time, so set it before `npm run build`. Required in production: without it `/status` reports the backend unavailable |
 

@@ -24,6 +24,12 @@ Record the chosen source, its terms, and image/content usage rights in an ADR (`
 
 ---
 
+## Source Selection
+
+`CATALOGUE_SOURCE` picks the adapter in `backend/app/integrations/oriflame/`. Today only `fixture` exists (ADR-001). An accepted source gets its own adapter behind the `CatalogueSource` Protocol and uses `FeedHttpClient`, which enforces timeouts, bounded retries, Retry-After limits and an immediate stop on 401/403.
+
+---
+
 ## Ingestion Rules
 
 | Rule | Detail |

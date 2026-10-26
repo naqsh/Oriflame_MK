@@ -35,6 +35,8 @@ ORIFLAME_COUNTRY=PK
 ORIFLAME_CONSULTANT_CODE=
 ORIFLAME_REFERRAL_URL=
 ORIFLAME_REFERRAL_METHOD=official_url
+
+CATALOGUE_SOURCE=fixture
 ```
 
 Leave referral values empty locally unless you have real, approved values. Never commit `.env`.

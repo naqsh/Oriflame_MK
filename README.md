@@ -117,6 +117,8 @@ ORIFLAME_COUNTRY=PK
 ORIFLAME_CONSULTANT_CODE=
 ORIFLAME_REFERRAL_URL=
 ORIFLAME_REFERRAL_METHOD=official_url
+
+CATALOGUE_SOURCE=fixture
 ```
 
 Commit `.env.example` only — never `.env` or real codes/credentials.
