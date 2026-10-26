@@ -1,10 +1,11 @@
-import { render, screen, within } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import HomePage from "@/app/page";
 import { CATALOGUE_UNAVAILABLE, HomeCatalogue } from "@/components/home/home-catalogue";
 
 import { jsonResponse, productSummary } from "./catalogue-fixtures";
+import { render } from "./test-render";
 
 // connection() needs a real request scope; outside Next it only marks the render dynamic.
 vi.mock("next/server", () => ({ connection: async () => {} }));

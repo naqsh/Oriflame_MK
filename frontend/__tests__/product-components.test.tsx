@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { DevDataBanner } from "@/components/layout/dev-data-banner";
@@ -8,6 +8,7 @@ import { ProductCard } from "@/components/product/product-card";
 import { ProductGrid } from "@/components/product/product-grid";
 
 import { productSummary } from "./catalogue-fixtures";
+import { render } from "./test-render";
 
 const NBSP = /\s/;
 
@@ -140,10 +141,11 @@ describe("DevDataBanner", () => {
   });
 
   it("renders nothing for real or empty data", () => {
-    const { container } = render(
+    render(
       <DevDataBanner items={[productSummary({ data_source: "permitted_feed", is_development_data: false })]} />,
     );
-    expect(container).toBeEmptyDOMElement();
-    expect(render(<DevDataBanner items={[]} />).container).toBeEmptyDOMElement();
+    expect(screen.queryByRole("complementary")).not.toBeInTheDocument();
+    render(<DevDataBanner items={[]} />);
+    expect(screen.queryByRole("complementary")).not.toBeInTheDocument();
   });
 });

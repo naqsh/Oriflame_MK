@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 
 import { CategoryNav } from "@/components/layout/category-nav";
+import { ListIndicator } from "@/components/referral/list-indicator";
 import { SearchBox } from "@/components/search/search-box";
 import { SITE_NAME } from "@/lib/seo/site";
 
@@ -13,8 +14,11 @@ export function SiteHeader() {
           <Link href="/" className="font-heading text-lg font-semibold">
             {SITE_NAME}
           </Link>
-          <div className="w-full sm:w-80">
-            <SearchBox />
+          <div className="flex w-full items-center gap-2 sm:w-auto">
+            <div className="min-w-0 flex-1 sm:w-80">
+              <SearchBox />
+            </div>
+            <ListIndicator />
           </div>
         </div>
         <Suspense fallback={null}>

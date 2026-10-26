@@ -1,5 +1,6 @@
-import { render } from "@testing-library/react";
 import { Children, Fragment, type ReactNode, cloneElement, isValidElement } from "react";
+
+import { render } from "./test-render";
 
 type AnyProps = Record<string, unknown> & { children?: ReactNode };
 

@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CATEGORY_UNAVAILABLE, CategoryContent } from "@/components/catalogue/category-content";
@@ -7,6 +7,7 @@ import { LISTING_UNAVAILABLE, ProductListing } from "@/components/filters/produc
 
 import { jsonResponse, productSummary } from "./catalogue-fixtures";
 import { renderServer } from "./render-server";
+import { render } from "./test-render";
 
 const NOT_FOUND = new Error("NEXT_NOT_FOUND");
 vi.mock("next/navigation", () => ({

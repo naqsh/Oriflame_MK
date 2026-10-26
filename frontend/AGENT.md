@@ -32,11 +32,12 @@ This file governs all development within the Next.js (App Router) frontend. The 
 frontend/
 ├── AGENT.md                    # This file
 ├── app/
-│   ├── layout.tsx              # Root layout: html lang, SiteShell, title template + description
+│   ├── layout.tsx              # Root layout: html lang, ShoppingListProvider, SiteShell, title template
 │   ├── page.tsx                # Homepage: static hero + how-it-works, HomeCatalogue streamed per request
 │   ├── products/page.tsx       # All products: static h1, ProductsResults streamed (filters, sort, pages)
 │   ├── products/[slug]/page.tsx    # Product detail: ProductDetailContent streamed
 │   ├── categories/[slug]/page.tsx  # CategoryContent streamed: breadcrumb, h1, subcategories, listing
+│   ├── list/page.tsx           # Shopping list (noindex): ShoppingListView (Client)
 │   ├── search/page.tsx         # Search (noindex): SearchResults streamed
 │   ├── not-found.tsx           # Root 404 UI (links home and to all products)
 │   ├── status/page.tsx         # Backend status (noindex), request-time BackendStatus
@@ -52,12 +53,14 @@ frontend/
 │   ├── product/                # price, availability-badge, product-image, product-card, product-grid
 │   ├── search/                 # search-box (GET form to /search, no JS)
 │   ├── status/                 # backend-status (Server Component)
-│   └── referral/, ui/          # (planned; empty, .gitkeep)
+│   ├── referral/               # shopping-list-provider, add-to-list-button, list-indicator, shopping-list-view
+│   └── ui/                     # (planned; empty, .gitkeep)
 ├── lib/
 │   ├── api/                    # client.ts (fetchJson, ApiError), catalogue.ts (getProducts, getProduct,
 │   │                           # getCategories, getCategory, searchProducts), schemas/{catalogue,health}.ts
 │   ├── categories.ts           # categoryOptions: flatten the tree for a <select>
 │   ├── images.ts               # AUTHORISED_IMAGE_HOSTS (empty, ADR-001), authorisedImageSrc
+│   ├── shopping-list.ts        # List items, versioned storage format, add/quantity/remove, indicative total
 │   ├── search.ts               # parseSearchParams (trim, cut to 100), searchHref
 │   ├── text.ts                 # toParagraphs: source text/HTML to plain paragraphs (never raw HTML)
 │   ├── listing.ts              # parseListingParams (normalise URL state), listingHref, SORT_OPTIONS
@@ -89,6 +92,16 @@ Adjust structure when useful, but keep modules cohesive and avoid oversized file
 | `CategoryNav` | Request-time (`connection()`) inside `Suspense` in the header; top-level categories with products; omitted, with a log line, if the API fails. Because of it every route is a Partial Prerender (`◐`) |
 
 All of these are Server Components; none needs `"use client"`.
+
+### Shopping list (OR-027)
+
+- **Browser only:** `localStorage` key `oriflame-mk.shopping-list.v1`, holding `{version: 1, items: [{slug, name, quantity, price_pkr}]}`. No account, address or payment fields exist; the page has no form inputs at all.
+- **Store:** `ShoppingListProvider` (root layout) wraps a small external store read with `useSyncExternalStore`. The server and the first client render see an empty list, so hydration matches; the `storage` event keeps other tabs in sync. Corrupt, foreign or other-version data is discarded (`parseStored`), and unknown fields are stripped.
+- **Unavailable storage:** if the browser refuses to store (blocked, private mode, quota), the list switches to memory and `/list` shows an alert that it will be lost on leaving.
+- **UI:** `AddToListButton` on every card (below the card's link, since a button cannot sit inside a link) and in the product page's `add-to-list` slot; `ListIndicator` in the header ("List (n)", accessible name "Shopping list, n items"); `/list` with − / + quantity buttons (1 to 99), Remove, and an indicative total ("Indicative — final price on Oriflame"), computed exactly in paisa. Unpriced and unavailable items are excluded from the total, each with a note. Every change is announced in a polite live region.
+- **Freshness:** on `/list`, each item is checked once with `GET /api/v1/products/{slug}` (the same request a product page makes; no query string, no quantities, never the whole list). A 404 flags "No longer available"; a different price flags "Price updated" and updates the stored price. A failed check leaves the item unflagged.
+- **Handoff slot:** `data-slot="referral-handoff"` on `/list` for OR-E4.
+- **Tests:** `__tests__/test-render.tsx` provides a `render` wrapped in the provider with in-memory storage, and `memoryStorage({ fail })` simulates blocked storage.
 
 ### Search results page (OR-026)
 

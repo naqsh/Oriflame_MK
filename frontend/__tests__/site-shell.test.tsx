@@ -1,8 +1,10 @@
-import { render, screen, within } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { SiteShell } from "@/components/layout/site-shell";
 import { SITE_NAME } from "@/lib/seo/site";
+
+import { render } from "./test-render";
 
 describe("SiteShell", () => {
   it("renders banner, main and contentinfo landmarks", () => {
