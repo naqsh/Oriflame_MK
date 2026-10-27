@@ -90,6 +90,21 @@ sequenceDiagram
 
 Copy shown to visitors must state that checkout and fulfilment happen on Oriflame's official platform and must not claim attribution.
 
+### Checkout handoff: items and payment go to Oriflame (owner requirement, 2026-10-27)
+
+When a visitor checks out, **the order, payment and delivery happen on Oriflame's main site** (`pk.oriflame.com`), never here. This site has no checkout, takes no payment and collects no address or card details. "Buy from Oriflame" on a product page and on the shopping list (`/list`) hands the visitor over with the owner's referral (above).
+
+The visitor's items go with them, in the way Oriflame permits:
+
+| Case | What the handoff does |
+|---|---|
+| Oriflame documents a way to pre-fill its basket (an official cart link or API) | Use it, but only after OR-029 confirms it and ADR-002 records the terms |
+| Otherwise (the default) | Open Oriflame with the referral destination and show the list to re-add there: names, product codes, quantities and, for real (non-fixture) products, each item's official product link, plus a "copy list" action |
+
+Never script, automate or scrape Oriflame's basket or checkout, and never send the visitor's list to this site's backend (OR-027 keeps it in the browser). Until a permitted source exists (ADR-001), fixture products have no Oriflame product pages, so the list handoff shows names and quantities only.
+
+The referral code and URL placeholders are in the owner's local `.env` (filled in later); empty values leave the referral "not configured" and the store keeps working.
+
 ---
 
 ## Admin Visibility
