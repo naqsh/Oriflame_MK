@@ -40,7 +40,9 @@ ORIFLAME_REFERRAL_METHOD=official_url
 |---|---|
 | `pk.oriflame.com` | Oriflame Pakistan, the only allowed host |
 
-Subdomain wildcards are not allowed, and neither are URLs with embedded credentials. Adding a host is a code change plus an update to this table, made only after the owner confirms it.
+Subdomain wildcards are not allowed, and neither are URLs with embedded credentials. Adding a host is a code change plus an update to this table and to [ADR-002](adr/ADR-002-referral-method.md), made only after the owner confirms it.
+
+**Referral method:** see [ADR-002](adr/ADR-002-referral-method.md) (Proposed). Both `official_url` and `manual_code` are supported by configuration. Until a referral is configured, the handoff runs in **restricted mode**: it links to `https://pk.oriflame.com/` with no referral claim.
 
 ### Validation (OR-002)
 

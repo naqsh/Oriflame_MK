@@ -6,13 +6,24 @@
 
 ## Current Epic
 
-**OR-E3 — MVP 3: Storefront**, merged in PR naqsh/Oriflame_MK#4 (`de95399`). Next epic: OR-E4 (not started; OR-029 needs the owner's referral decision). See `docs/PLAN.md`.
+**OR-E4 — MVP 4: Referral Handoff** on branch `epic/E4-referral-handoff` (from `epic/autonomus-implementation` at `424529b`). The owner authorised completing the epic, including the PR and the merge, without asking (2026-10-27). See `docs/PLAN.md`.
 
-**OR-E4 requirements already agreed (2026-10-27):**
-- Referral placeholders (`ORIFLAME_COUNTRY`, `ORIFLAME_CONSULTANT_CODE`, `ORIFLAME_REFERRAL_URL`, `ORIFLAME_REFERRAL_METHOD=official_url`) are in the owner's local `.env`, empty until the owner fills them in.
-- Checkout handoff: the order, payment and delivery always happen on Oriflame's main site. The shopping-list items go with the visitor in the way Oriflame permits: a pre-filled basket only if OR-029 confirms an official mechanism, otherwise the referral destination plus the list to re-add (names, codes, quantities, official product links, copy list). See `docs/REFERRAL.md`, "Checkout handoff".
+**Requirements agreed with the owner (2026-10-27):** referral placeholders are in the owner's local `.env` (empty for now); checkout, payment and delivery always happen on Oriflame's main site, and the shopping-list items go with the visitor in the way Oriflame permits (`docs/REFERRAL.md`, "Checkout handoff").
 
 ### Plan
+
+- [x] OR-029: [ADR-002](../adr/ADR-002-referral-method.md) (Proposed): both methods by configuration, restricted mode (plain link to `https://pk.oriflame.com/`, no referral claim) until a referral is configured, allow-list `pk.oriflame.com` unchanged, the code is never appended to URLs. Indexed; `REFERRAL.md` links it. `test_referral_adr.py` checks that the code allow-list matches the ADR line exactly.
+- [ ] OR-030: ReferralService
+- [ ] OR-031: referral click storage
+- [ ] OR-032: handoff API endpoint
+- [ ] OR-033: BuyFromOriflame and CopyReferralCode components
+- [ ] OR-034: referral / how-to-buy page
+- [ ] OR-035: documentation sync for referral handoff
+
+---
+
+## OR-E3 record (merged in PR naqsh/Oriflame_MK#4, `de95399`)
+
 
 - [x] OR-018: `GET /api/v1/products` (query model with category including subcategories, price range, 5 sorts, page, and page_size 1 to 100) and `GET /api/v1/products/{slug}` (images, categories, availability, source URL, last sync, 4 related). Router → `ProductService` → `repositories/product_reads.py`. Visible products only; `data_source` / `is_development_data` on every item. Availability comes from a minimal `services/availability.py` (always `not_confirmed`, since no source provides availability); OR-021 completes it. Evidence: backend gate clean; 238 passed with `-W error::DeprecationWarning`, 98.81% coverage. `test_products_api.py` (33 tests) covers pagination totals, page_size over 100 → 422, every sort with unknown prices last, invalid sort → 422, hidden products excluded and 404, unknown slug → safe 404, a page past the end → empty with the total, price filters excluding unknown prices, invalid slugs rejected before the database, unknown parameters → 422, and cyclic category data.
 - [x] OR-019: `GET /api/v1/categories` (tree with visible product counts that include subcategories; empty categories at 0) and `GET /api/v1/categories/{slug}` (ancestors from root to parent, children with counts, 404 or 422). `services/categories.py` builds the tree in memory from `repositories/category_reads.py`; `break_cycles` cuts each cycle at its lowest id and logs `category_cycle_detected`. Evidence: backend gate clean; 253 passed with `-W error::DeprecationWarning`, 98.92% coverage. Tests cover nesting, counts excluding hidden products and counting a product once, counts matching `/products?category=`, ancestor paths, 404 and 422, an empty catalogue, cyclic parents in the database (every category appears once), and unit tests for `break_cycles`.

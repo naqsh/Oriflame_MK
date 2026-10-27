@@ -79,6 +79,7 @@ What is the change that we're proposing and/or doing?
 | ADR | Title | Status | Date |
 |---|---|---|---|
 | [ADR-001](ADR-001-catalogue-data-source.md) | Catalogue data source (fixtures until a permitted source is confirmed) | Proposed | 2026-10-26 |
+| [ADR-002](ADR-002-referral-method.md) | Referral method and allowed hosts (both methods by config; restricted mode until confirmed) | Proposed | 2026-10-27 |
 | [ADR-005](ADR-005-configuration-provider-seam.md) | Configuration provider seam | Accepted | 2026-10-26 |
 | [ADR-007](ADR-007-storefront-rendering.md) | Storefront rendering under Cache Components (request-time data, soft 404 until OR-E5) | Accepted | 2026-10-27 |
 | [ADR-006](ADR-006-scaffold-toolchain-choices.md) | Scaffold toolchain choices (MVP 1) | Accepted | 2026-10-26 |
@@ -90,7 +91,7 @@ What is the change that we're proposing and/or doing?
 Decisions that need ADRs during implementation (ADR numbers reserved by epic tasks):
 
 1. **ADR-001 Catalogue data source** (OR-010): [Proposed](ADR-001-catalogue-data-source.md). No permitted source yet; development fixtures only, images omitted. Accept once the owner has written permission or an official feed
-2. **ADR-002 Referral method** (OR-029) — `official_url` vs `manual_code`; allowed referral hosts
+2. **ADR-002 Referral method** (OR-029): [Proposed](ADR-002-referral-method.md). Both methods supported by configuration; restricted mode until the owner confirms Oriflame's mechanism
 3. **ADR-003 Admin authentication** (OR-044) — session-based vs JWT vs external identity provider
 4. **ADR-004 Deployment target** (OR-052) — hosting for Next.js and FastAPI (database is Supabase — see `docs/DATABASE.md`)
 5. ~~Configuration provider seam~~: decided in [ADR-005](ADR-005-configuration-provider-seam.md)
