@@ -81,6 +81,8 @@ class ProductSummary(BaseModel):
     # Catalogue source name; "dev_fixture" means development data the UI must flag.
     data_source: str
     is_development_data: bool
+    # When the source last listed this product (sitemap lastmod, honest freshness).
+    last_synced_at: datetime
 
 
 class ProductPage(BaseModel):
@@ -96,5 +98,4 @@ class ProductDetail(ProductSummary):
     images: list[ImageOut]
     categories: list[CategoryRef]
     source_url: str
-    last_synced_at: datetime
     related: list[ProductSummary]

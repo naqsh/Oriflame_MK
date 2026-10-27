@@ -150,6 +150,7 @@ def test_pagination_and_response_shape(api: TestClient, catalogue: None) -> None
         "availability",
         "data_source",
         "is_development_data",
+        "last_synced_at",
     }
 
 
