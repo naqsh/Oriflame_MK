@@ -1,9 +1,9 @@
-# Session Checkpoint: OR-E2 Merged, Ready for OR-E3
+# Session Checkpoint: OR-E3 Merged, Ready for OR-E4
 
-**Date:** October 26, 2026
+**Date:** October 27, 2026
 **Repo:** `naqsh/Oriflame_MK` (**public**), local path `D:\Projects\OriflameMK` (Windows)
-**Integration branch:** `epic/autonomus-implementation` at merge commit `46f234c` (PR #3)
-**Status:** MVP 1 (OR-001 to OR-009) and MVP 2 (OR-010 to OR-017) complete and merged. OR-E3 not started.
+**Integration branch:** `epic/autonomus-implementation` at merge commit `de95399` (PR #4)
+**Status:** MVP 1 (OR-001 to OR-009), MVP 2 (OR-010 to OR-017) and MVP 3 (OR-018 to OR-028) complete and merged. OR-E4 not started.
 
 ---
 
@@ -16,60 +16,63 @@
 
 ## Current state
 
-- **MVP 2 is merged.** PR #3 merged `epic/E2-catalogue-data` into `epic/autonomus-implementation` as merge commit `46f234c`.
-- **Local checkout:** on `epic/autonomus-implementation`. The local E2 branch is deleted; the remote `origin/epic/E2-catalogue-data` is kept.
+- **MVP 3 is merged.** The owner merged PR #4 (`epic/E3-storefront`) into `epic/autonomus-implementation` as merge commit `de95399`; all three CI checks passed.
+- **Local checkout:** on `epic/autonomus-implementation`. The local E3 branch is deleted; the remote `origin/epic/E3-storefront` is kept.
 - **`main`** holds only the docs and `LICENSE`. Epic work merges into the integration branch, never into `main`.
 - **This file** is kept on purpose as the handoff between sessions (the owner asked for it), although the docs rules say to delete the checkpoint after a merge. Replace it at the next handoff.
 
-## Catalogue data (MVP 2)
+## What exists
 
-- **ADR-001 is Proposed:** no permitted Oriflame data source exists. Only **development fixtures** are used; product images from Oriflame are omitted; nothing reads Oriflame's website (a guard test enforces this).
-- **Fixture:** `backend/fixtures/dev_catalogue_sample.json` (12 `Sample Product NN` products, 3 categories). Load it with `uv run python -m backend.app.cli sync --fixtures`. Rows get `products.source = 'dev_fixture'`, so OR-E3 can show a "Development data" banner.
-- **Schema:** migrations `002_catalogue_schema` and `003_product_source`; tables `products`, `product_images`, `categories`, `product_categories`, `catalogue_sync_runs`. No variant or availability tables, so availability is always "not confirmed".
-- **Sync:** `CatalogueSyncService` (idempotent upserts, run records, one sync at a time, hide-not-delete, no mixing of sources). Rules are in `backend/AGENT.md`; the pattern is in `docs/learning/2026-10-idempotent-catalogue-upserts.md`.
-- **Known limitation:** a sync never re-shows a hidden product. Needs an admin control (OR-E6).
+- **Catalogue (MVP 2):** development fixtures only (ADR-001 Proposed). `backend/fixtures/dev_catalogue_sample.json`, loaded with `uv run python -m backend.app.cli sync --fixtures`. Migrations 001 to 004 (004 adds full-text search and `pg_trgm` in `extensions`).
+- **API (MVP 3):** `GET /api/v1/products` (filters, sorts, pagination, `featured`), `/products/{slug}`, `/categories`, `/categories/{slug}`, `/search`. Availability is always `not_confirmed` (no source provides it); `AVAILABILITY_MAX_AGE_HOURS` sets the freshness window for the day one does.
+- **Pages (MVP 3):** `/`, `/products`, `/categories/[slug]`, `/products/[slug]`, `/search`, `/list` (browser-only shopping list) and the not-found page. Every route is a Partial Prerender with request-time data; why, and every deviation from the page specs, is in **ADR-007**.
+- **Ready for OR-E4:** empty `data-slot="referral-handoff"` on the product page and on `/list`; the homepage "How it works" links to `/referral` (404 until OR-034). `components/referral/` holds the shopping list.
 
 ## Stack and versions
 
 Full pins are in `docs/ENGINEERING-STANDARDS.md`.
 
-- **Backend:** Python 3.14 (`.python-version`; `>=3.12` supported), uv, FastAPI 0.162, Pydantic 2.14, SQLAlchemy 2.1, Alembic 1.20, psycopg 3.3, structlog 26.1, httpx 0.28 (runtime since OR-013).
+- **Backend:** Python 3.14 (`.python-version`; `>=3.12` supported), uv, FastAPI 0.162, Pydantic 2.14, SQLAlchemy 2.1, Alembic 1.20, psycopg 3.3, structlog 26.1, httpx 0.28.
 - **Frontend:** Next.js 16.4.3 (App Router, `cacheComponents`), React 19.3, TypeScript 5.9 strict, Tailwind 4, Zod 4.6, Node 24.
 - **Database:** Supabase PostgreSQL through `POSTGRES_URL` (port 5432 only). Row-level security with no policies on every `public` table.
-- **Tests:** backend 205 tests (98.7% coverage, `db` tests need `TEST_POSTGRES_URL`); frontend 18 Vitest and 2 Playwright tests. Network blocked in all suites.
+- **Tests:** backend 299 (98.98% coverage; `db` tests need `TEST_POSTGRES_URL`); frontend 193 Vitest (96.7% lines) and 2 Playwright. Network blocked in all suites.
 - **CI:** `.github/workflows/ci.yml` (backend, frontend, e2e), SHA-pinned actions, no secrets.
 
 ## Rules
 
 - **Secrets:** the repo is public. Never commit `.env` or print its values. Scan staged files for secrets before every commit.
 - **Branching:** from `epic/autonomus-implementation`, create `epic/E{n}-{short}`; PR back with a **merge commit**; after merge delete the local epic branch, keep the remote.
-- **Before marking work done:** backend `uv run ruff check backend && uv run ruff format backend && uv run python -m mypy backend && uv run pytest` (also `-W error::DeprecationWarning`); frontend `npm run lint && npm run typecheck && npm run test && npm run build`.
+- **Before marking work done:** backend `uv run ruff check backend && uv run ruff format backend && uv run python -m mypy backend && uv run pytest` (also `-W error::DeprecationWarning`); frontend `npm run lint && npm run typecheck && npm run test && npm run build`; Playwright `npm run test:e2e`.
+- **Next.js 16 is not the Next.js in training data:** read `frontend/node_modules/next/dist/docs/` before using an API. Under Cache Components, `params`, `searchParams` and uncached data must be read inside `Suspense`.
 - **Tickets:** `docs/jira-tickets-json/OR-E{1..6}-*.json`; plan and evidence in `docs/tasks/todo.md`; mistakes in `lessons.md`.
 - **Commits:** end with the `Co-Authored-By` line your environment provides.
-- **Asking first:** the owner normally asks for each commit, push and PR. For OR-015 to OR-017 and PR #3 they authorised doing it all, including the merge, without asking. That authorisation does not carry over to OR-E3.
+- **Asking first:** the owner asks for each commit, push and PR. The one-off authorisation to merge without asking (PR #3) does not carry over.
 
-## Windows quirks
+## Windows and tooling quirks
 
 Details in `docs/tasks/lessons.md`.
 
 - Run `uv run python -m mypy backend` and `uv run python -m pip_audit --skip-editable` (Application Control blocks the `.exe` launchers).
-- Stopping `uvicorn --reload` can leave a worker on port 8000; check and stop it.
+- After stopping servers, check ports 8000 and 3000 are free (a `--reload` worker can survive).
 - No plain `python`; use `uv run python`. Ticket JSON needs `json.loads(..., strict=False)`.
-- `NEXT_PUBLIC_API_BASE_URL` is baked in at build time.
-- Test database: Docker container `oriflame-test-db` (postgres:17) on port 54329, `TEST_POSTGRES_URL=postgresql://postgres:postgres@localhost:54329/postgres`.
+- `NEXT_PUBLIC_API_BASE_URL` is baked in at build time; set it before `npm run build`.
+- Test database: Docker container `oriflame-test-db` (postgres:17) on port 54329, `TEST_POSTGRES_URL=postgresql://postgres:postgres@localhost:54329/postgres`. Backend tests empty the catalogue tables; re-run the fixture sync before manual checks.
+- **In-app browser pane hidden:** it does not paint or hydrate until a screenshot forces a frame. Check hydration before testing clicks, verify content with `curl`, and never record paint metrics (LCP) from it.
+- **Vitest:** render pages with `__tests__/render-server.tsx` (nested async Server Components) and `__tests__/test-render.tsx` (shopping-list provider).
 
 ## Open items
 
-1. **Owner's `.env`:** remove the `[ ]` around the password in `POSTGRES_URL`, delete the stray `POSTGRES_PASSWORD` line, add `TEST_POSTGRES_URL`. Then run `uv run alembic upgrade head` against the Supabase dev project (never tested there; now three migrations).
+1. **Owner's `.env`:** remove the `[ ]` around the password in `POSTGRES_URL`, delete the stray `POSTGRES_PASSWORD` line, add `TEST_POSTGRES_URL`. Then run `uv run alembic upgrade head` against the Supabase dev project (never tested there; now four migrations, including `pg_trgm` in `extensions`).
 2. **Postgres version:** the next agent checks the Supabase project's major version against `postgres:17` (ADR-006) once the `.env` works.
 3. **ADR-001:** stays Proposed until the owner has written permission from Oriflame or an official feed.
-4. **Decisions still needed from the owner:** ADR-002 referral method (OR-029), ADR-003 admin auth (OR-044), ADR-004 hosting (OR-052).
-5. **Optional:** Dependabot for the pinned action SHAs.
+4. **Decisions needed from the owner:** **ADR-002 referral method (OR-029, blocks OR-E4)**: is there an official Oriflame Pakistan referral URL with the consultant code, or should visitors copy the code (`manual_code`)? Also ADR-003 admin auth (OR-044), ADR-004 hosting (OR-052).
+5. **Deferred, with owners (ADR-007):** real 404 and per-page metadata (OR-E5), cross-request caching (OR-052), search rate limiting (OR-E6), Lighthouse LCP in a visible browser.
+6. **Optional:** Dependabot for the pinned action SHAs.
 
 ## Next
 
-Start **OR-E3 (MVP 3: Storefront)** on a new `epic/E3-storefront` branch from the updated integration branch, beginning with **OR-018** (products API with filter, sort and pagination). Ask the owner before starting.
+Start **OR-E4 (MVP 4: Referral Handoff)** on a new `epic/E4-referral-handoff` branch from the updated integration branch, beginning with **OR-029** (confirm the referral mechanism and record ADR-002). OR-029 needs the owner's answer first. Ask the owner before starting.
 
 ---
 
-*Checkpoint written October 26, 2026*
+*Checkpoint written October 27, 2026*

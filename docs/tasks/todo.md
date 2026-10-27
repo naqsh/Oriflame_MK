@@ -6,7 +6,7 @@
 
 ## Current Epic
 
-**OR-E3 — MVP 3: Storefront** on branch `epic/E3-storefront` (from `epic/autonomus-implementation` at `ea3d6ff`). See `docs/PLAN.md`.
+**OR-E3 — MVP 3: Storefront**, merged in PR naqsh/Oriflame_MK#4 (`de95399`). Next epic: OR-E4 (not started; OR-029 needs the owner's referral decision). See `docs/PLAN.md`.
 
 ### Plan
 
@@ -132,6 +132,7 @@ Found along the way: without `connection()`, `/status` was prerendered at build 
 |---|---|---|
 | OR-E1 | MVP 1 project scaffold (OR-001 to OR-009), PR naqsh/Oriflame_MK#2, merge commit `b211b58` | 2026-10-26 |
 | OR-E2 | MVP 2 catalogue data (OR-010 to OR-017), development fixtures only (ADR-001 Proposed), PR naqsh/Oriflame_MK#3, merge commit `46f234c` | 2026-10-26 |
+| OR-E3 | MVP 3 storefront (OR-018 to OR-028), rendering decisions in ADR-007, PR naqsh/Oriflame_MK#4, merge commit `de95399` | 2026-10-27 |
 
 ---
 
