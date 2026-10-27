@@ -73,13 +73,18 @@ describe("sitemapEntries", () => {
   it("lists public pages, visible real products with lastModified, and categories with products", async () => {
     stubApi([[real("rose-cream"), productSummary({ slug: "sample-product-01" })]], 2);
 
-    const entries = await sitemapEntries(["/about"]);
+    const entries = await sitemapEntries(["/guides/example"]);
 
     expect(entries).toEqual([
       { url: SITE },
       { url: `${SITE}/products` },
       { url: `${SITE}/referral` },
       { url: `${SITE}/about` },
+      { url: `${SITE}/contact` },
+      { url: `${SITE}/privacy` },
+      { url: `${SITE}/terms` },
+      { url: `${SITE}/cookies` },
+      { url: `${SITE}/guides/example` },
       { url: `${SITE}/products/rose-cream`, lastModified: "2026-10-20T10:00:00Z" },
       { url: `${SITE}/categories/face` },
       { url: `${SITE}/categories/body` },

@@ -7,8 +7,17 @@ import { getSiteUrl, isIndexable } from "@/lib/seo/site";
 /** Never indexed: admin, API, search results and the visitor's own list. */
 export const PRIVATE_PATHS = ["/admin", "/api", "/search", "/list"] as const;
 
-/** Fixed public pages; content pages and approved guides register here (OR-040/041). */
-export const PUBLIC_PAGES: readonly string[] = ["/", "/products", "/referral"];
+/** Fixed public pages, including the informational and legal content pages. */
+export const PUBLIC_PAGES: readonly string[] = [
+  "/",
+  "/products",
+  "/referral",
+  "/about",
+  "/contact",
+  "/privacy",
+  "/terms",
+  "/cookies",
+];
 
 /** One sitemap file holds at most 50,000 URLs; beyond that, split with generateSitemaps. */
 export const SITEMAP_URL_LIMIT = 50_000;
