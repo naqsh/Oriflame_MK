@@ -20,6 +20,7 @@ from backend.app.core.passwords import DUMMY_HASH, verify_password
 from backend.app.db.session import get_db
 from backend.app.models import AdminUser
 from backend.app.repositories import admin_users
+from backend.app.services import audit
 
 logger = structlog.get_logger(__name__)
 
@@ -53,9 +54,23 @@ class AdminAuthService:
         user = admin_users.get_by_email(self._session, email)
         if user is None:
             verify_password(password, DUMMY_HASH)  # same cost as a real check
+            audit.record(
+                self._session,
+                audit.ADMIN_LOGIN_FAILED,
+                admin_user_id=None,
+                details={"reason": "unknown_email"},
+            )
+            self._session.commit()
             logger.info("admin_login_failed", reason="unknown_email")
             return None
         if user.locked_until is not None and user.locked_until > now:
+            audit.record(
+                self._session,
+                audit.ADMIN_LOGIN_FAILED,
+                admin_user_id=user.id,
+                details={"reason": "locked"},
+            )
+            self._session.commit()
             logger.info("admin_login_failed", reason="locked", admin_user_id=user.id)
             return None
         if not verify_password(password, user.password_hash) or not user.is_active:
@@ -73,6 +88,7 @@ class AdminAuthService:
             token_hash=hash_token(token),
             expires_at=expires_at,
         )
+        audit.record(self._session, audit.ADMIN_LOGIN, admin_user_id=user.id)
         self._session.commit()
         logger.info("admin_login", admin_user_id=user.id)
         return LoginResult(token=token, expires_at=expires_at, user=user)
@@ -80,18 +96,26 @@ class AdminAuthService:
     def _record_failure(self, user: AdminUser, now: datetime) -> None:
         reason = "inactive" if not user.is_active else "bad_password"
         user.failed_attempts += 1
-        if user.failed_attempts >= MAX_FAILED_ATTEMPTS:
+        locked_now = user.failed_attempts >= MAX_FAILED_ATTEMPTS
+        if locked_now:
             user.locked_until = now + LOCKOUT
             user.failed_attempts = 0
             logger.warning("admin_account_locked", admin_user_id=user.id)
+        audit.record(
+            self._session,
+            audit.ADMIN_LOGIN_FAILED,
+            admin_user_id=user.id,
+            details={"reason": reason, "locked": locked_now},
+        )
         self._session.commit()
         logger.info("admin_login_failed", reason=reason, admin_user_id=user.id)
 
     def authenticate(self, token: str) -> AdminUser | None:
         return admin_users.active_session_user(self._session, hash_token(token), self._clock())
 
-    def logout(self, token: str) -> None:
+    def logout(self, token: str, admin_user_id: int) -> None:
         admin_users.revoke_session(self._session, hash_token(token), self._clock())
+        audit.record(self._session, audit.ADMIN_LOGOUT, admin_user_id=admin_user_id)
         self._session.commit()
 
     def has_admin(self) -> bool:

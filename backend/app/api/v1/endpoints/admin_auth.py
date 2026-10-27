@@ -53,7 +53,7 @@ def admin_setup(auth: AuthService) -> AdminSetupStatus:
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
 def admin_logout(request: Request, admin: CurrentAdmin, auth: AuthService) -> None:
-    auth.logout(request.state.admin_token)
+    auth.logout(request.state.admin_token, admin.id)
 
 
 @router.get("/me", response_model=AdminMe)

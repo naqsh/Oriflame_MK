@@ -7,8 +7,9 @@ outside it.
 
 from fastapi import APIRouter, Depends
 
-from backend.app.api.v1.endpoints import admin_auth
+from backend.app.api.v1.endpoints import admin_audit, admin_auth
 from backend.app.core.security import require_admin
 
 router = APIRouter(prefix="/admin", dependencies=[Depends(require_admin)])
 router.include_router(admin_auth.router)
+router.include_router(admin_audit.router)
