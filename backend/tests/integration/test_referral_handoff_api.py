@@ -192,3 +192,33 @@ def test_rate_limit_answers_429_with_retry_after(
 
 def test_get_is_not_allowed(api: TestClient) -> None:
     assert api.get(URL).status_code == status.HTTP_405_METHOD_NOT_ALLOWED
+
+
+@pytest.mark.parametrize(
+    "env, method",
+    [
+        ({}, "unavailable"),
+        ({"ORIFLAME_REFERRAL_URL": REFERRAL_URL}, "official_url"),
+        (
+            {"ORIFLAME_REFERRAL_METHOD": "manual_code", "ORIFLAME_CONSULTANT_CODE": FAKE_CODE},
+            "manual_code",
+        ),
+    ],
+)
+def test_mode_reveals_only_the_method_and_records_nothing(
+    api: TestClient,
+    db_session: Session,
+    monkeypatch: pytest.MonkeyPatch,
+    env: dict[str, str],
+    method: str,
+) -> None:
+    for name, value in env.items():
+        monkeypatch.setenv(name, value)
+
+    response = api.get("/api/v1/referral/mode")
+
+    assert response.json() == {"method": method}
+    assert response.headers["Cache-Control"] == "no-store"
+    assert FAKE_CODE not in response.text
+    assert "join?ref" not in response.text
+    assert _clicks(db_session) == []

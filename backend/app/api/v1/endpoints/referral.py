@@ -9,8 +9,13 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Request, Response
 
 from backend.app.core.rate_limit import RateLimiter, rate_limit_dependency
-from backend.app.schemas.referral import HandoffRequest, ReferralHandoff
-from backend.app.services.referral import HandoffService, get_handoff_service
+from backend.app.schemas.referral import HandoffRequest, ReferralHandoff, ReferralMode
+from backend.app.services.referral import (
+    HandoffService,
+    ReferralService,
+    get_handoff_service,
+    get_referral_service,
+)
 
 HANDOFF_LIMIT_PER_MINUTE = 30
 handoff_limiter = RateLimiter(limit=HANDOFF_LIMIT_PER_MINUTE)
@@ -31,3 +36,13 @@ def referral_handoff(
 ) -> ReferralHandoff:
     response.headers["Cache-Control"] = "no-store"
     return service.handoff(body, user_agent=request.headers.get("user-agent", ""))
+
+
+@router.get("/mode", response_model=ReferralMode)
+def referral_mode(
+    response: Response,
+    service: Annotated[ReferralService, Depends(get_referral_service)],
+) -> ReferralMode:
+    """The handoff method only: never the code or URL, and no click is recorded."""
+    response.headers["Cache-Control"] = "no-store"
+    return ReferralMode(method=service.resolve().method)

@@ -34,6 +34,12 @@ ReferralHandoff = Annotated[
 ]
 
 
+class ReferralMode(BaseModel):
+    """Which handoff the store uses, without the code or URL (for the how-to-buy page)."""
+
+    method: Literal["official_url", "manual_code", "unavailable"]
+
+
 class HandoffRequest(BaseModel):
     """Body of POST /api/v1/referral/handoff. The client never supplies a destination."""
 
