@@ -7,6 +7,7 @@ import { Price } from "@/components/product/price";
 import { ProductGrid } from "@/components/product/product-grid";
 import { ProductImage } from "@/components/product/product-image";
 import { AddToListButton } from "@/components/referral/add-to-list-button";
+import { BuyFromOriflame } from "@/components/referral/buy-from-oriflame";
 import { getProduct } from "@/lib/api/catalogue";
 import { ApiError } from "@/lib/api/client";
 import type { ProductDetail } from "@/lib/api/schemas/catalogue";
@@ -90,8 +91,9 @@ export async function ProductDetailContent({ params }: { params: Promise<{ slug:
           ) : null}
           <Price value={product.price_pkr} className="block text-2xl" />
           <AvailabilityBadge availability={product.availability} />
-          {/* Reserved: "Buy from Oriflame" handoff (OR-E4). */}
-          <div data-slot="referral-handoff" />
+          <div data-slot="referral-handoff">
+            <BuyFromOriflame origin="pdp" productSlug={product.slug} />
+          </div>
           <div data-slot="add-to-list">
             <AddToListButton
               product={{ slug: product.slug, name: product.name, price_pkr: product.price_pkr }}

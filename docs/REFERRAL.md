@@ -40,7 +40,9 @@ ORIFLAME_REFERRAL_METHOD=official_url
 |---|---|
 | `pk.oriflame.com` | Oriflame Pakistan, the only allowed host |
 
-Subdomain wildcards are not allowed, and neither are URLs with embedded credentials. Adding a host is a code change plus an update to this table, made only after the owner confirms it.
+Subdomain wildcards are not allowed, and neither are URLs with embedded credentials. Adding a host is a code change plus an update to this table and to [ADR-002](adr/ADR-002-referral-method.md), made only after the owner confirms it.
+
+**Referral method:** see [ADR-002](adr/ADR-002-referral-method.md) (Proposed). Both `official_url` and `manual_code` are supported by configuration. Until a referral is configured, the handoff runs in **restricted mode**: it links to `https://pk.oriflame.com/` with no referral claim.
 
 ### Validation (OR-002)
 
@@ -69,24 +71,43 @@ Subdomain wildcards are not allowed, and neither are URLs with embedded credenti
 
 ## Handoff Flow
 
+Implemented in OR-E4 (ADR-002, **Proposed**: restricted mode until the owner configures a referral).
+
 ```mermaid
 sequenceDiagram
   participant V as Visitor
-  participant FE as Next.js
-  participant API as FastAPI /referral
+  participant FE as BuyFromOriflame (browser)
+  participant API as POST /api/v1/referral/handoff
   participant RS as ReferralService
+  participant DB as referral_clicks
   V->>FE: Click "Buy from Oriflame"
-  FE->>API: Request handoff
+  FE->>API: {origin, product_slug?, item_count} (no destination field)
   API->>RS: resolve()
-  RS->>RS: Load config, validate host, record click
+  RS->>RS: Read config via ConfigProvider, re-validate URL
+  API->>DB: Record anonymous click (best effort; bots skipped)
   alt official_url
-    RS-->>FE: Validated referral URL
-    FE-->>V: Outbound link to official Oriflame
+    API-->>FE: {method, url, note}
+    FE-->>V: New tab to the referral URL (dialog with items, or if the pop-up is blocked)
   else manual_code
-    RS-->>FE: Instructions + code
-    FE-->>V: Instructions + copy-code action
+    API-->>FE: {method, code, instructions, checkout_url}
+    FE-->>V: Dialog: steps, Copy code, items to re-add, link to Oriflame
+  else unavailable (restricted mode)
+    API-->>FE: {method, reason, message, fallback_url}
+    FE-->>V: Dialog: purchase continues on Oriflame, link to https://pk.oriflame.com/
   end
 ```
+
+| Piece | Where |
+|---|---|
+| Referral decisions and all visitor text | `backend/app/services/referral.py` (`ReferralService`, `HandoffService`) |
+| URL rules (https, allow-listed host, no credentials, fragment or non-default port) | `referral_url_problem` in `backend/app/core/config.py`, at startup and on every resolve |
+| Handoff endpoint | `POST /api/v1/referral/handoff` (`extra="forbid"`, item_count 0 to 200, `Cache-Control: no-store`, 30 requests per minute per client) |
+| Mode for the how-to-buy page | `GET /api/v1/referral/mode`, which returns the method only (no code or URL, no click) |
+| UI | `frontend/components/referral/buy-from-oriflame.tsx`, `copy-text.tsx`, the `/referral` page |
+
+### Click analytics
+
+`referral_clicks` stores only `occurred_at`, `method`, `origin` (`pdp`, `list`, `referral_page`), `product_slug` (NULL when unknown or not a product click) and `item_count`. There is **no IP address, user agent, cookie or other identifier**. Obvious bots (by user agent, inspected and discarded) are not counted, and a failure to record never blocks the handoff. `daily_counts(start, end)` counts by Pakistan-time day for the admin view (OR-E6). Clicks are not sales: nothing here claims attribution.
 
 Copy shown to visitors must state that checkout and fulfilment happen on Oriflame's official platform and must not claim attribution.
 

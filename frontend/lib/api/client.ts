@@ -34,50 +34,79 @@ export interface FetchJsonOptions {
   timeoutMs?: number;
 }
 
-/**
- * GET `path` from the backend and validate the JSON body with `schema`.
- * Extra fields are stripped by Zod; missing or wrong fields raise ApiError.
- */
-export async function fetchJson<Schema extends z.ZodType>(
+async function requestJson<Schema extends z.ZodType>(
+  method: "GET" | "POST",
   path: string,
   schema: Schema,
-  { timeoutMs = DEFAULT_TIMEOUT_MS }: FetchJsonOptions = {},
+  body: unknown,
+  timeoutMs: number,
 ): Promise<z.infer<Schema>> {
   const url = `${getApiBaseUrl()}${path}`;
 
   let response: Response;
   try {
     response = await fetch(url, {
-      headers: { Accept: "application/json" },
+      method,
+      headers:
+        method === "POST"
+          ? { Accept: "application/json", "Content-Type": "application/json" }
+          : { Accept: "application/json" },
+      body: method === "POST" ? JSON.stringify(body) : undefined,
       cache: "no-store",
       signal: AbortSignal.timeout(timeoutMs),
     });
   } catch (error) {
     // Match by name: the DOMException class differs between runtimes (Node, jsdom).
     if (error instanceof Error && error.name === "TimeoutError") {
-      throw new ApiError("timeout", `GET ${path} timed out after ${timeoutMs} ms`);
+      throw new ApiError("timeout", `${method} ${path} timed out after ${timeoutMs} ms`);
     }
-    throw new ApiError("network", `GET ${path} failed: ${String(error)}`);
+    throw new ApiError("network", `${method} ${path} failed: ${String(error)}`);
   }
 
   if (!response.ok) {
-    throw new ApiError("http", `GET ${path} returned ${response.status}`, response.status);
+    throw new ApiError("http", `${method} ${path} returned ${response.status}`, response.status);
   }
 
-  let body: unknown;
+  let parsedBody: unknown;
   try {
-    body = await response.json();
+    parsedBody = await response.json();
   } catch {
-    throw new ApiError("invalid_response", `GET ${path} returned invalid JSON`, response.status);
+    throw new ApiError(
+      "invalid_response",
+      `${method} ${path} returned invalid JSON`,
+      response.status,
+    );
   }
 
-  const parsed = schema.safeParse(body);
+  const parsed = schema.safeParse(parsedBody);
   if (!parsed.success) {
     throw new ApiError(
       "invalid_response",
-      `GET ${path} response did not match schema`,
+      `${method} ${path} response did not match schema`,
       response.status,
     );
   }
   return parsed.data;
+}
+
+/**
+ * GET `path` from the backend and validate the JSON body with `schema`.
+ * Extra fields are stripped by Zod; missing or wrong fields raise ApiError.
+ */
+export function fetchJson<Schema extends z.ZodType>(
+  path: string,
+  schema: Schema,
+  { timeoutMs = DEFAULT_TIMEOUT_MS }: FetchJsonOptions = {},
+): Promise<z.infer<Schema>> {
+  return requestJson("GET", path, schema, undefined, timeoutMs);
+}
+
+/** POST a JSON `body` to `path` and validate the response with `schema`. */
+export function postJson<Schema extends z.ZodType>(
+  path: string,
+  body: unknown,
+  schema: Schema,
+  { timeoutMs = DEFAULT_TIMEOUT_MS }: FetchJsonOptions = {},
+): Promise<z.infer<Schema>> {
+  return requestJson("POST", path, schema, body, timeoutMs);
 }

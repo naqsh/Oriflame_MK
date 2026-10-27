@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 import { formatPrice } from "@/components/product/price";
+import { BuyFromOriflame } from "@/components/referral/buy-from-oriflame";
 import { useShoppingList } from "@/components/referral/shopping-list-provider";
 import { getProduct } from "@/lib/api/catalogue";
 import { MAX_QUANTITY, indicativeTotal, itemCount } from "@/lib/shopping-list";
@@ -171,8 +172,13 @@ export function ShoppingListView() {
               </p>
             ) : null}
           </section>
-          {/* Reserved: "Buy from Oriflame" handoff for the whole list (OR-E4). */}
-          <div data-slot="referral-handoff" />
+          <div data-slot="referral-handoff">
+            <BuyFromOriflame
+              origin="list"
+              label="Buy these on Oriflame"
+              items={buyable.map((item) => ({ name: item.name, quantity: item.quantity }))}
+            />
+          </div>
         </>
       )}
     </div>

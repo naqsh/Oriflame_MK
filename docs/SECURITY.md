@@ -34,7 +34,7 @@ Admin actions (manual sync, visibility/featured changes) are written to `audit_l
 | Area | Control | Test Coverage |
 |---|---|---|
 | Configuration | Pydantic Settings validation; `.env` never committed | Config tests |
-| Referral handoff | Server-side resolution; HTTPS + host allow-list (prevents open redirect) | Referral tests |
+| Referral handoff | Server-side resolution; HTTPS + exact host allow-list, no credentials, fragment or non-default port, re-checked on every resolve; the request body cannot carry a destination (`extra="forbid"`); rate limited; clicks stored without personal data | `test_referral.py`, `test_referral_handoff_api.py`, `test_referral_clicks.py`; frontend source scan in `referral.test.tsx` |
 | Admin | AuthN + AuthZ dependency on every admin route | `tests/security/` access tests |
 | Input validation | Pydantic (backend), Zod (frontend) | API validation tests |
 | Database | Parameterised ORM operations only | Code review + tests |

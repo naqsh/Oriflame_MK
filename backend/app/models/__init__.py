@@ -9,6 +9,7 @@ from backend.app.models.catalogue import (
     SyncRunStatus,
     product_categories,
 )
+from backend.app.models.referral import ReferralClick
 
 __all__ = [
     "Base",
@@ -16,6 +17,7 @@ __all__ = [
     "Category",
     "Product",
     "ProductImage",
+    "ReferralClick",
     "SyncRunStatus",
     "product_categories",
 ]

@@ -42,7 +42,8 @@ frontend/
 │   ├── not-found.tsx           # Root 404 UI (links home and to all products)
 │   ├── status/page.tsx         # Backend status (noindex), request-time BackendStatus
 │   ├── globals.css             # Tailwind 4 + shadcn theme tokens
-│   └── (planned) referral/, about/, contact/,
+│   ├── referral/page.tsx       # How buying works: steps for the current mode, BuyFromOriflame, FAQ
+│   └── (planned) about/, contact/,
 │       privacy/, terms/, admin/, sitemap.ts, robots.ts (JSON-LD in layout: OR-E5)
 ├── components/
 │   ├── catalogue/              # products-results, category-content, product-detail, search-results (page bodies)
@@ -53,7 +54,8 @@ frontend/
 │   ├── product/                # price, availability-badge, product-image, product-card, product-grid
 │   ├── search/                 # search-box (GET form to /search, no JS)
 │   ├── status/                 # backend-status (Server Component)
-│   ├── referral/               # shopping-list-provider, add-to-list-button, list-indicator, shopping-list-view
+│   ├── referral/               # shopping-list-provider, add-to-list-button, list-indicator, shopping-list-view,
+│   │                           # buy-from-oriflame, copy-text (CopyText, CopyReferralCode), referral-steps
 │   └── ui/                     # (planned; empty, .gitkeep)
 ├── lib/
 │   ├── api/                    # client.ts (fetchJson, ApiError), catalogue.ts (getProducts, getProduct,
@@ -93,6 +95,16 @@ Adjust structure when useful, but keep modules cohesive and avoid oversized file
 
 All of these are Server Components; none needs `"use client"`.
 
+### Referral handoff (OR-033, OR-034)
+
+- **`BuyFromOriflame`** (Client Component) calls `POST /api/v1/referral/handoff` on click. The URL and code only ever come from that response; no component builds a referral URL, and a source-scan test fails if any frontend file contains an Oriflame URL or a referral setting name.
+- **Official link, no list:** opens a new tab (`window.open`, then `opener = null`). If the pop-up is blocked, the dialog offers a same-tab link.
+- **Dialog** (native modal `<dialog>`, so focus stays inside; Escape and Close): manual-code steps with `CopyReferralCode`, the restricted-mode message, and on the list the items to re-add with "Copy list". It always ends with "Continue to Oriflame" (`noopener noreferrer`).
+- **`CopyText`:** Clipboard API; if blocked, a selected read-only field with a Ctrl+C hint. Success is announced.
+- **Network error:** "Try again", never a guessed URL.
+- **`/referral`:** steps for the current mode (`GET /api/v1/referral/mode`; a code step only in `manual_code`), the CTA, a short FAQ and the disclaimer. Copy to be reviewed by the owner before launch.
+- **Tests:** Vitest has a `<dialog>` stand-in in `vitest.setup.ts`, because jsdom has none.
+
 ### Shopping list (OR-027)
 
 - **Browser only:** `localStorage` key `oriflame-mk.shopping-list.v1`, holding `{version: 1, items: [{slug, name, quantity, price_pkr}]}`. No account, address or payment fields exist; the page has no form inputs at all.
@@ -100,7 +112,7 @@ All of these are Server Components; none needs `"use client"`.
 - **Unavailable storage:** if the browser refuses to store (blocked, private mode, quota), the list switches to memory and `/list` shows an alert that it will be lost on leaving.
 - **UI:** `AddToListButton` on every card (below the card's link, since a button cannot sit inside a link) and in the product page's `add-to-list` slot; `ListIndicator` in the header ("List (n)", accessible name "Shopping list, n items"); `/list` with − / + quantity buttons (1 to 99), Remove, and an indicative total ("Indicative — final price on Oriflame"), computed exactly in paisa. Unpriced and unavailable items are excluded from the total, each with a note. Every change is announced in a polite live region.
 - **Freshness:** on `/list`, each item is checked once with `GET /api/v1/products/{slug}` (the same request a product page makes; no query string, no quantities, never the whole list). A 404 flags "No longer available"; a different price flags "Price updated" and updates the stored price. A failed check leaves the item unflagged.
-- **Handoff slot:** `data-slot="referral-handoff"` on `/list` for OR-E4.
+- **Handoff:** `BuyFromOriflame origin="list"` in the `/list` slot, with the buyable items (unavailable ones excluded) for the "Items to add on Oriflame" list.
 - **Tests:** `__tests__/test-render.tsx` provides a `render` wrapped in the provider with in-memory storage, and `memoryStorage({ fail })` simulates blocked storage.
 
 ### Search results page (OR-026)
@@ -119,7 +131,7 @@ All of these are Server Components; none needs `"use client"`.
 - **Images:** a gallery of authorised images (first large, the rest as thumbnails), or the neutral "No image available for …" placeholder.
 - **Source link:** for real data, "View this product on {host}" with `target="_blank"` and `rel="noopener noreferrer"`. Development fixtures have no official page, and the page says so instead of linking.
 - **Honesty notes:** "Checkout and fulfilment happen on Oriflame's official platform", and the date the details were last updated from the source.
-- **Reserved slots:** empty `data-slot="referral-handoff"` (OR-E4 "Buy from Oriflame") and `data-slot="add-to-list"` (OR-027).
+- **Slots:** `data-slot="referral-handoff"` holds `BuyFromOriflame origin="pdp"` (OR-033); `data-slot="add-to-list"` holds `AddToListButton` (OR-027).
 - **No `generateStaticParams` yet:** it runs during `next build`, which has no backend (same reason as the homepage). Pages render per request; add static params with revalidation alongside OR-052. Hidden or unknown slugs call `notFound()` (soft 404 with `noindex`, as for categories).
 
 ### Product listing and category pages (OR-024)
@@ -173,7 +185,7 @@ Required pages: homepage, product listing and category pages, product detail pag
 | Search results | `/search` | ✅ OR-026 |
 | Shopping list | `/list` | ✅ OR-027 |
 | Not found | (any unknown route) | ✅ OR-024 |
-| Referral / how to buy | `/referral` | ⬜ OR-E4 (linked from the homepage already) |
+| Referral / how to buy | `/referral` | ✅ OR-034 |
 | About, contact, privacy, terms, cookies | | ⬜ OR-E5 |
 
 Deviations from these specs, with reasons, are recorded in [ADR-007](../docs/adr/ADR-007-storefront-rendering.md).
