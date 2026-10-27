@@ -33,7 +33,7 @@ export function ProductImage({
         role="img"
         aria-label={`No image available for ${productName}`}
         className={cn(
-          "flex aspect-square w-full items-center justify-center rounded-md bg-muted text-sm text-muted-foreground",
+          "flex aspect-square w-full items-center justify-center rounded-md bg-muted text-sm text-foreground/70",
           className,
         )}
       >

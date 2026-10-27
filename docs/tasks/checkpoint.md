@@ -69,7 +69,7 @@ Details in `docs/tasks/lessons.md`.
 3. **Catalogue (ADR-001 Proposed):** a permitted source is needed; development fixtures only.
 4. **Content:** the owner reviews the content pages (`CONTENT_REVIEWED`) and guides (`approval`), and sets `CONTACT_*` if wanted.
 5. **Supabase dev (done 2026-10-28):** `POSTGRES_URL` fixed, seven migrations applied on Postgres 17.11, fixtures loaded, API verified end to end (see `docs/DATABASE.md`). Optional: add `TEST_POSTGRES_URL` to `.env` for the local test database.
-6. **Not built, needs a decision:** OR-048 product visibility/featured; the axe accessibility spec (`@axe-core/playwright` dependency); a CSP nonce (conflicts with Partial Prerendering); a shared rate-limit store for more than one API instance.
+6. **Not built, needs a decision:** OR-048 product visibility/featured; a CSP nonce (conflicts with Partial Prerendering); a shared rate-limit store for more than one API instance.
 7. **Optional:** Dependabot for the pinned action SHAs.
 
 ## Next

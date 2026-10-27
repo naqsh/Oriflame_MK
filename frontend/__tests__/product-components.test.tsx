@@ -57,12 +57,22 @@ describe("AvailabilityBadge", () => {
 });
 
 describe("ProductCard", () => {
-  it("is one link named after the product, to its page", () => {
+  it("is one link named exactly by its visible text (WCAG 2.5.3), to its page", () => {
     render(<ProductCard product={productSummary()} />);
+    const links = screen.getAllByRole("link");
+    expect(links).toHaveLength(1);
     const link = screen.getByRole("link", { name: "Sample Product 01" });
     expect(link).toHaveAttribute("href", "/products/sample-product-01");
-    expect(within(link).getByText(/Rs.1,499/)).toBeInTheDocument();
-    expect(within(link).getByText("Availability not confirmed")).toBeInTheDocument();
+    expect(link).not.toHaveAttribute("aria-label");
+    expect(link.textContent).toBe("Sample Product 01");
+    const card = screen.getByRole("article");
+    expect(within(card).getByText(/Rs.1,499/)).toBeInTheDocument();
+    expect(within(card).getByText("Availability not confirmed")).toBeInTheDocument();
+  });
+
+  it("names Add to list with its visible words first, then the product", () => {
+    render(<ProductCard product={productSummary()} />);
+    expect(screen.getByRole("button", { name: "Add to list: Sample Product 01" })).toHaveTextContent(/^Add to list/);
   });
 
   it("renders a local development placeholder image with its alt text", () => {

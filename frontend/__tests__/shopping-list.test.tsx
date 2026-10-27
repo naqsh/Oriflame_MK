@@ -137,7 +137,7 @@ describe("Add to list and the header indicator", () => {
     const indicator = screen.getByRole("link", { name: "Shopping list, 0 items" });
     expect(indicator).toHaveAttribute("href", "/list");
 
-    await user.click(screen.getByRole("button", { name: "Add Sample Product 01 to your shopping list" }));
+    await user.click(screen.getByRole("button", { name: "Add to list: Sample Product 01" }));
     expect(screen.getByRole("link", { name: "Shopping list, 1 item" })).toHaveTextContent("List (1)");
     expect(screen.getByRole("link", { name: "1 in your list" })).toHaveAttribute("href", "/list");
     const live = container.querySelector('[aria-live="polite"]');
@@ -300,7 +300,7 @@ describe("ShoppingListView", () => {
     );
 
     expect(screen.getByRole("alert")).toHaveTextContent(/will be lost when you leave/);
-    await user.click(screen.getByRole("button", { name: /Add Sample Product 01/ }));
+    await user.click(screen.getByRole("button", { name: "Add to list: Sample Product 01" }));
     expect(screen.getByRole("list", { name: "Items in your list" })).toHaveTextContent("Sample Product 01");
   });
 

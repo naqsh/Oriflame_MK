@@ -14,13 +14,15 @@ test("homepage → category → product → list → Buy from Oriflame handoff",
   await page.getByRole("navigation", { name: "Categories" }).getByRole("link").first().click();
   await expect(page).toHaveURL(/\/categories\//);
 
-  await page.getByRole("link", { name: /Sample Product/ }).first().click();
+  // The whole tile is clickable, not just the title link (stretched link overlay).
+  // Click the image area: the title link's overlay covers it and takes the click.
+  await page.getByRole("article").first().click({ position: { x: 40, y: 40 } });
   await expect(page).toHaveURL(/\/products\//);
   const productName = (await page.getByRole("heading", { level: 1 }).textContent())?.trim() ?? "";
   expect(productName).toMatch(/Sample Product/);
   await expect(page.getByText("Availability not confirmed").first()).toBeVisible();
 
-  await page.getByRole("button", { name: /to your shopping list/ }).first().click();
+  await page.getByRole("button", { name: /^Add to list/ }).first().click();
   await expect(page.getByRole("link", { name: "Shopping list, 1 item" })).toBeVisible();
 
   await page.getByRole("link", { name: "Shopping list, 1 item" }).click();
