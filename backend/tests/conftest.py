@@ -18,6 +18,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import Engine, create_engine, make_url, pool
 from sqlalchemy.orm import Session
 
+from backend.app.api.v1.endpoints import admin_auth, referral, search
 from backend.app.core.config import (
     SUPABASE_HOST_SUFFIXES,
     get_config_provider,
@@ -33,6 +34,7 @@ CONFIG_ENV_VARS = (
     "POSTGRES_URL",
     "APP_ENV",
     "CORS_ORIGINS",
+    "TRUSTED_PROXIES",
     "ORIFLAME_COUNTRY",
     "ORIFLAME_CONSULTANT_CODE",
     "ORIFLAME_REFERRAL_URL",
@@ -68,6 +70,9 @@ def clean_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Iterator[None]
     monkeypatch.setenv("APP_ENV", "test")
     monkeypatch.setenv("CORS_ORIGINS", ALLOWED_ORIGIN)
     _clear_caches()
+    # In-memory rate limits are per process; start every test with empty counters.
+    for limiter in (search.search_limiter, referral.handoff_limiter, admin_auth.login_limiter):
+        limiter.reset()
     yield
     _clear_caches()
 

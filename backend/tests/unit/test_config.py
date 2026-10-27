@@ -15,6 +15,7 @@ from backend.app.core.config import (
     load_settings,
     normalise_postgres_url,
 )
+from backend.app.main import create_app
 
 # The autouse clean_env fixture in conftest.py sets POSTGRES_URL to LOCAL_DB.
 LOCAL_DB = "postgresql://localhost:5432/app"
@@ -50,6 +51,7 @@ def test_production_with_empty_referral_config_reports_not_configured(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("APP_ENV", "production")
+    monkeypatch.setenv("CORS_ORIGINS", "https://store.example.pk")
 
     settings = load_settings()
 
@@ -230,3 +232,39 @@ def test_provider_can_be_replaced_with_explicit_settings(monkeypatch: pytest.Mon
 
     assert provider.get_settings() is custom
     assert provider.get_referral_config().is_configured is True
+
+
+@pytest.mark.parametrize(
+    "origins",
+    ["", "*", "http://store.example.pk", "https://store.example.pk/path", "https://a.pk,*"],
+)
+def test_production_requires_explicit_https_cors_origins(
+    monkeypatch: pytest.MonkeyPatch, origins: str
+) -> None:
+    monkeypatch.setenv("APP_ENV", "production")
+    monkeypatch.setenv("CORS_ORIGINS", origins)
+    with pytest.raises(ConfigurationError) as excinfo:
+        load_settings()
+    assert "CORS_ORIGINS" in str(excinfo.value)
+
+
+def test_production_accepts_https_site_origins(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("APP_ENV", "production")
+    monkeypatch.setenv("CORS_ORIGINS", "https://store.example.pk,https://www.store.example.pk/")
+    assert load_settings().cors_origins == [
+        "https://store.example.pk",
+        "https://www.store.example.pk/",
+    ]
+
+
+def test_trusted_proxies_parse_like_origins(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("TRUSTED_PROXIES", "10.0.0.5, 127.0.0.1")
+    assert load_settings().trusted_proxies == ["10.0.0.5", "127.0.0.1"]
+
+
+def test_app_startup_fails_on_invalid_production_settings(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A misconfigured deploy exits at startup, before it can serve traffic (OR-052)."""
+    monkeypatch.setenv("APP_ENV", "production")
+    monkeypatch.setenv("CORS_ORIGINS", "*")
+    with pytest.raises(ConfigurationError):
+        create_app()

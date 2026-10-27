@@ -100,7 +100,9 @@ backend/
 │       ├── 002_catalogue_schema.py  # Catalogue tables + sync_run_status enum; RLS on each
 │       ├── 003_product_source.py    # products.source (indexed; existing rows backfilled dev_fixture)
 │       ├── 004_product_search.py    # generated search_vector + GIN; pg_trgm (extensions schema) name index
-│       └── 005_referral_clicks.py   # referral_clicks (no personal data), index on occurred_at, RLS
+│       ├── 005_referral_clicks.py   # referral_clicks (no personal data), index on occurred_at, RLS
+│       ├── 006_admin_auth.py        # admin_users, admin_sessions (token hashes), RLS
+│       └── 007_audit_logs.py        # audit_logs, RLS
 └── tests/
     ├── conftest.py             # clean_env, app/client/async_client, TEST_POSTGRES_URL db fixtures
     ├── unit/                   # config, db session, slugs, catalogue schemas, sources (fixture, mocked HTTP)
@@ -203,8 +205,9 @@ Supabase PostgreSQL + Alembic. Every table in `public` gets `ENABLE ROW LEVEL SE
 | `product_variants` | **Omitted** (OR-011): ADR-001 confirms no source that provides variants |
 | `product_availability` | **Omitted** (OR-011): no source data; the storefront labels availability "not confirmed" |
 | `catalogue_sync_runs` ✅ | `source`, `started_at`/`finished_at`, `status` (enum `sync_run_status`: running, success, failed, partial), created/updated/unchanged/error counts, `error_detail` |
-| `admin_users` | If admin authentication is implemented |
-| `audit_logs` | Meaningful admin actions |
+| `admin_users` ✅ | unique lower-cased `email`, scrypt `password_hash`, `is_active`, `last_login_at`, `failed_attempts`, `locked_until` (OR-044, `006_admin_auth`, RLS) |
+| `admin_sessions` ✅ | SHA-256 `token_hash` only (never the token), `expires_at` (8 h), `revoked_at`; cascade on admin delete (`006_admin_auth`, RLS) |
+| `audit_logs` ✅ | `occurred_at` (indexed), nullable `admin_user_id` (SET NULL), `action`, `target_type`, `target_id`, JSONB `details` (secret-looking keys refused); written in the same transaction as the action (OR-046, `007_audit_logs`, RLS) |
 | `referral_clicks` ✅ | `occurred_at` (indexed), `method`, `origin`, nullable `product_slug`, `item_count` 0 to 200; no IP, user agent or other identifier (OR-031, `005_referral_clicks`) |
 
 Use unique constraints, foreign keys, and indexes for product slug, SKU/source ID, category, and searchable fields. ✅ = created by `002_catalogue_schema`.

@@ -57,3 +57,14 @@ def daily_counts(session: Session, start: date, end: date) -> list[DailyCount]:
         by_method = per_day.get(day, {})
         counts.append(DailyCount(day=day, total=sum(by_method.values()), by_method=by_method))
     return counts
+
+
+def origin_totals(session: Session, start: date, end: date) -> dict[str, int]:
+    """Clicks per origin (pdp, list, referral_page) over the same Pakistan-time days."""
+    local_day = cast(func.timezone(REPORTING_TIMEZONE, ReferralClick.occurred_at), Date)
+    rows = session.execute(
+        select(ReferralClick.origin, func.count())
+        .where(local_day >= start, local_day <= end)
+        .group_by(ReferralClick.origin)
+    )
+    return {origin: count for origin, count in rows}

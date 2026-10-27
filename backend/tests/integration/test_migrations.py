@@ -33,7 +33,7 @@ def test_upgrade_head_on_empty_database(migration_config: Config, migrated_engin
 
     with migrated_engine.connect() as connection:
         version = connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
-    assert version == "005_referral_clicks"
+    assert version == "007_audit_logs"
 
 
 def test_downgrade_base_then_upgrade_head(migration_config: Config) -> None:
@@ -43,9 +43,9 @@ def test_downgrade_base_then_upgrade_head(migration_config: Config) -> None:
 
 def test_downgrade_one_then_upgrade_head(migration_config: Config, migrated_engine: Engine) -> None:
     command.downgrade(migration_config, "-1")
-    assert "referral_clicks" not in inspect(migrated_engine).get_table_names()
+    assert "audit_logs" not in inspect(migrated_engine).get_table_names()
     command.upgrade(migration_config, "head")
-    assert "referral_clicks" in inspect(migrated_engine).get_table_names()
+    assert "audit_logs" in inspect(migrated_engine).get_table_names()
 
 
 def test_downgrade_catalogue_schema_removes_tables_and_enum(

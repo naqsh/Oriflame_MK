@@ -104,3 +104,32 @@ def fail_stale_runs(session: Session, *, started_before: datetime | None = None)
         .returning(CatalogueSyncRun.id)
     )
     return len(result.all())
+
+
+def sync_lock_available(engine: Engine) -> bool:
+    """Whether no sync holds the lock right now (probe: take and release at once)."""
+    try:
+        with catalogue_sync_lock(engine):
+            return True
+    except SyncAlreadyRunningError:
+        return False
+
+
+def page_runs(session: Session, *, page: int, page_size: int) -> tuple[list[CatalogueSyncRun], int]:
+    """Newest first."""
+    total = session.scalar(select(func.count()).select_from(CatalogueSyncRun)) or 0
+    rows = session.scalars(
+        select(CatalogueSyncRun)
+        .order_by(CatalogueSyncRun.started_at.desc(), CatalogueSyncRun.id.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+    ).all()
+    return list(rows), total
+
+
+def last_success_at(session: Session) -> datetime | None:
+    return session.scalar(
+        select(func.max(CatalogueSyncRun.finished_at)).where(
+            CatalogueSyncRun.status == SyncRunStatus.SUCCESS
+        )
+    )

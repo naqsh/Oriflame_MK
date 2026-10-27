@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { ProductImage } from "@/components/product/product-image";
 import { WebVitals } from "@/components/status/web-vitals";
+import WebVitalsReporter from "@/components/status/web-vitals-reporter";
 
 type Metric = { name: string; value: number; rating: string };
 let reporter: ((metric: Metric) => void) | null = null;
@@ -53,9 +54,9 @@ describe("ProductImage sizing", () => {
 });
 
 describe("WebVitals", () => {
-  it("logs each metric to the console and renders nothing", () => {
+  it("the reporter logs each metric to the console and renders nothing", () => {
     const info = vi.spyOn(console, "info").mockImplementation(() => {});
-    const { container } = render(<WebVitals />);
+    const { container } = render(<WebVitalsReporter />);
 
     reporter?.({ name: "LCP", value: 1234.5678, rating: "good" });
 
@@ -63,15 +64,21 @@ describe("WebVitals", () => {
     expect(info).toHaveBeenCalledWith("web-vital LCP=1234.57 rating=good");
   });
 
-  it("is mounted only in development and sends nothing over the network", () => {
-    const layout = readFileSync(join(process.cwd(), "app/layout.tsx"), "utf8");
-    // A dynamic import behind a build-time constant: a static import of a client module
-    // would ship its chunk to every page even though production never renders it.
-    expect(layout).toMatch(
-      /process\.env\.NODE_ENV === "development"\s*\? \(await import\("@\/components\/status\/web-vitals"\)\)/,
+  it("the wrapper renders nothing outside development (tests run as NODE_ENV=test)", () => {
+    const { container } = render(<WebVitals />);
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it("loads the reporter only behind the development check and sends nothing", () => {
+    const wrapper = readFileSync(join(process.cwd(), "components/status/web-vitals.tsx"), "utf8");
+    // The reporter (and the web-vitals library) must be reached only through this
+    // build-time constant, so production builds drop it.
+    expect(wrapper).toMatch(/process\.env\.NODE_ENV === "development"\s*\?\s*dynamic\(/);
+    expect(wrapper).not.toMatch(/^import .*web-vitals-reporter/m);
+    const reporterSource = readFileSync(
+      join(process.cwd(), "components/status/web-vitals-reporter.tsx"),
+      "utf8",
     );
-    expect(layout).not.toMatch(/^import .*web-vitals/m);
-    const source = readFileSync(join(process.cwd(), "components/status/web-vitals.tsx"), "utf8");
-    expect(source).not.toMatch(/fetch\(|sendBeacon|XMLHttpRequest/);
+    expect(reporterSource).not.toMatch(/fetch\(|sendBeacon|XMLHttpRequest/);
   });
 });

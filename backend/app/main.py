@@ -12,6 +12,7 @@ from backend.app.api.health import router as health_router
 from backend.app.api.v1.router import api_router
 from backend.app.core.config import get_config_provider
 from backend.app.core.logging import REQUEST_ID_HEADER, RequestContextMiddleware, configure_logging
+from backend.app.core.security_headers import SecurityHeadersMiddleware
 from backend.app.schemas.errors import ErrorResponse
 
 logger = structlog.get_logger(__name__)
@@ -58,6 +59,7 @@ def create_app() -> FastAPI:
         allow_headers=["Content-Type", REQUEST_ID_HEADER],
         expose_headers=[REQUEST_ID_HEADER],
     )
+    app.add_middleware(SecurityHeadersMiddleware, hsts=settings.app_env == "production")
     app.add_middleware(RequestContextMiddleware)
     app.add_exception_handler(Exception, handle_unexpected_error)
 

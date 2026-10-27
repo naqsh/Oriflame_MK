@@ -39,9 +39,9 @@ Admin actions (manual sync, visibility/featured changes) are written to `audit_l
 | Input validation | Pydantic (backend), Zod (frontend) | API validation tests |
 | Database | Parameterised ORM operations only | Code review + tests |
 | Supabase Data API | RLS enabled on every `public` table with no policies; anon/service_role keys unused; `POSTGRES_URL` server-side only | RLS assertion test |
-| CORS | Narrow `CORS_ORIGINS` | Integration test |
-| Headers | CSP, HSTS, X-Content-Type-Options, Referrer-Policy, frame-ancestors | Header test |
-| Rate limits | On search, referral, and admin endpoints where appropriate | Rate-limit test |
+| CORS | Narrow `CORS_ORIGINS`; production refuses to start unless every origin is explicit `https` (no `*`, no path) | `test_headers_cors.py`, `test_config.py` |
+| Headers | API: `default-src 'none'`, nosniff, DENY, no-referrer, Permissions-Policy, HSTS in production (`core/security_headers.py`). Site: CSP (`lib/security-headers.ts`), nosniff, DENY, strict-origin-when-cross-origin, Permissions-Policy, HSTS. **Known limitation:** the site CSP keeps `script-src 'unsafe-inline'` because Next.js streams inline bootstrap scripts and a per-request nonce would disable the prerendered shells; everything else is locked down (no eval in production, `object-src 'none'`, `frame-ancestors 'none'`, `form-action`/`base-uri 'self'`, connect only to the site and API) | `test_headers_cors.py`, `security-headers.test.ts`, Playwright with CSP on |
+| Rate limits | In-memory, per process, per client: login 10/min plus account lockout, search 60/min, handoff 30/min. The client address is the direct peer unless it is a `TRUSTED_PROXIES` entry, so `X-Forwarded-For` cannot be spoofed. Multi-instance hosting would need a shared store (ask before adding Redis) | `test_rate_limit.py`, API tests |
 | Logging | Structured logs; secrets and consultant code never logged | Log redaction test |
 | Outbound calls | Explicit timeouts; only the permitted catalogue source | Integration tests (mocked) |
 | Output | React escaping; no `dangerouslySetInnerHTML` for imported descriptions unless sanitised | Component test |

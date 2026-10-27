@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 
 import { SiteShell } from "@/components/layout/site-shell";
 import { ShoppingListProvider } from "@/components/referral/shopping-list-provider";
+import { WebVitals } from "@/components/status/web-vitals";
 import { SITE_DESCRIPTION, SITE_NAME, getSiteUrl } from "@/lib/seo/site";
 
 import "./globals.css";
@@ -26,17 +27,11 @@ export const metadata: Metadata = {
   openGraph: { type: "website", siteName: SITE_NAME, locale: "en_PK" },
 };
 
-export default async function RootLayout({ children }: LayoutProps<"/">) {
-  // Development only. The condition is a build-time constant, so the production build
-  // drops this import entirely and no web-vitals code ships to visitors.
-  const WebVitals =
-    process.env.NODE_ENV === "development"
-      ? (await import("@/components/status/web-vitals")).WebVitals
-      : null;
+export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">
-        {WebVitals ? <WebVitals /> : null}
+        <WebVitals />
         <ShoppingListProvider>
           <SiteShell>{children}</SiteShell>
         </ShoppingListProvider>

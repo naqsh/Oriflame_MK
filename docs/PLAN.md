@@ -134,7 +134,7 @@ Fresh autonomous kickoff only (not every "hi"): then read `docs/KICKOFF-PROMPT.m
 
 ---
 
-## MVP 6: Admin & Hardening 🔄
+## MVP 6: Admin & Hardening ✅ (with exceptions; see MVP Acceptance Criteria)
 
 **Epic:** OR-E6  
 **Branch:** `epic/E6-admin-hardening`  
@@ -142,36 +142,36 @@ Fresh autonomous kickoff only (not every "hi"): then read `docs/KICKOFF-PROMPT.m
 
 | Task ID | Summary | Area | Effort | Depends on | Status | Agent |
 |---|---|---|---|---|---|---|
-| OR-044 | Admin authentication (ADR-003) and admin users | Backend / Frontend / Security | L | OR-E1 | ⬜ | Coding |
-| OR-045 | Admin authorisation dependency and CSRF protection | Backend / Frontend / Security | M | OR-044 | ⬜ | Coding |
-| OR-046 | Audit logging for admin actions | Backend / Frontend | S | OR-045 | ⬜ | Coding |
-| OR-047 | Catalogue sync status and manual sync trigger | Backend / Frontend | M | OR-046, OR-E2 | ⬜ | Coding |
-| OR-048 | Product visibility and featured selection (if required) | Backend / Frontend | M | OR-046 | ⬜ | Coding |
-| OR-049 | Referral configuration status and click analytics | Backend / Frontend | M | OR-045, OR-E4 | ⬜ | Coding |
-| OR-050 | Security headers, CORS verification, and rate limits | Backend / Frontend / Security | M | OR-044 | ⬜ | Coding |
-| OR-051 | Playwright end-to-end tests for critical journeys | Testing | M | OR-047, OR-049, OR-050 | ⬜ | Testing |
-| OR-052 | Deployment readiness: gates, production env template, deployment docs | Infrastructure / Docs | M | OR-051 | ⬜ | Coding |
-| OR-053 | MVP acceptance review | QA / Docs | M | OR-044–OR-052 | ⬜ | Docs |
+| OR-044 | Admin authentication (ADR-003) and admin users | Backend / Frontend / Security | L | OR-E1 | ✅ | Coding |
+| OR-045 | Admin authorisation dependency and CSRF protection | Backend / Frontend / Security | M | OR-044 | ✅ | Coding |
+| OR-046 | Audit logging for admin actions | Backend / Frontend | S | OR-045 | ✅ | Coding |
+| OR-047 | Catalogue sync status and manual sync trigger | Backend / Frontend | M | OR-046, OR-E2 | ✅ | Coding |
+| OR-048 | Product visibility and featured selection (if required) | Backend / Frontend | M | OR-046 | ✅ (not needed) | Coding |
+| OR-049 | Referral configuration status and click analytics | Backend / Frontend | M | OR-045, OR-E4 | ✅ | Coding |
+| OR-050 | Security headers, CORS verification, and rate limits | Backend / Frontend / Security | M | OR-044 | ✅ | Coding |
+| OR-051 | Playwright end-to-end tests for critical journeys | Testing | M | OR-047, OR-049, OR-050 | ✅ | Testing |
+| OR-052 | Deployment readiness: gates, production env template, deployment docs | Infrastructure / Docs | M | OR-051 | ✅ (deploy exercise open) | Coding |
+| OR-053 | MVP acceptance review | QA / Docs | M | OR-044–OR-052 | ✅ | Docs |
 
 ---
 
 ## MVP Acceptance Criteria
 
-The MVP is complete when:
+The MVP is complete when (reviewed 2026-10-27 in OR-053: **complete with exceptions**, each listed below and in `docs/tasks/todo.md`):
 
-- [ ] The site runs locally using documented commands.
-- [ ] Frontend and FastAPI backend communicate successfully.
-- [ ] PostgreSQL schema is managed by Alembic.
-- [ ] Product catalogue pages work with authorised data or clearly labelled development fixtures.
-- [ ] Search, category browsing, and product details work.
-- [ ] Referral configuration is read from server-side environment variables.
-- [ ] The "Buy from Oriflame" flow uses a validated, configured official referral destination or provides manual-code instructions.
-- [ ] No claim of live availability or attributed sales is made without confirmation.
-- [x] SEO metadata, sitemap, robots.txt, and applicable structured data are implemented.
-- [ ] Admin functions are protected.
-- [ ] `.env` secrets are not committed or exposed to the browser.
-- [ ] Setup, configuration, testing, and deployment instructions are documented.
-- [ ] The code is organised so a later multi-tenant phase can introduce tenant-aware configuration without rewriting core catalogue or referral services.
+- [x] The site runs locally using documented commands. *Evidence: `docs/guidence/try-it-locally.md`; every epic was run with these commands (backend `uvicorn --factory`, frontend `next dev` / `next start`); Playwright starts both from `playwright.config.ts`.*
+- [x] Frontend and FastAPI backend communicate successfully. *Evidence: Playwright `browse-to-handoff.spec.ts` (catalogue, search, handoff POST) and `admin-protection.spec.ts` (Server Actions → admin API), 7/7 with a database.*
+- [x] PostgreSQL schema is managed by Alembic. *Evidence: migrations 001 to 007; `test_migrations.py` (upgrade on an empty DB, downgrade base/-1, RLS on every table); `alembic check` clean; CI step on a fresh DB.*
+- [x] Product catalogue pages work with authorised data or clearly labelled development fixtures. *Evidence: development fixtures only (ADR-001 Proposed), with the "Development data" notice; fixture products are noindex, out of the sitemap and emit no Product JSON-LD. **Exception:** no authorised data source exists yet (owner).*
+- [x] Search, category browsing, and product details work. *Evidence: API tests (`test_products_api.py`, `test_categories_api.py`, `test_search_api.py`) and the Playwright journey.*
+- [x] Referral configuration is read from server-side environment variables. *Evidence: `ConfigProvider`/`Settings` only (no `os.environ` elsewhere); `test_config.py`, `test_referral.py`; the frontend source-hygiene test and a scan of `.next/static` find no code, URL or Oriflame host.*
+- [x] The "Buy from Oriflame" flow uses a validated, configured official referral destination or provides manual-code instructions. *Evidence: `ReferralService` (https + allow-listed host, re-checked per resolve), `test_referral.py`, `test_referral_handoff_api.py`, `referral.test.tsx`; Playwright asserts the destination host. **Exception:** no real referral value is configured yet, so the store runs in restricted mode (ADR-002 Proposed; owner).*
+- [x] No claim of live availability or attributed sales is made without confirmation. *Evidence: every product shows "Availability not confirmed"; no Offer JSON-LD; referral text tests reject attribution wording; admin analytics are labelled "handoff clicks, not sales" (`admin-sync-referral.test.tsx`).*
+- [x] SEO metadata, sitemap, robots.txt, and applicable structured data are implemented. *Evidence: OR-E5 (`docs/SEO-AIO-GEO.md`). **Exception:** external structured-data validation needs a public URL.*
+- [x] Admin functions are protected. *Evidence: router-level `require_admin`; `test_admin_access.py` enumerates every admin route (401 without a valid session); lockout and rate limit (`test_admin_auth.py`); Playwright redirect, direct-API 401 and cookie-flag checks.*
+- [x] `.env` secrets are not committed or exposed to the browser. *Evidence (2026-10-27): `git log --all` never contains `.env`; a history scan for credential patterns finds only placeholders, local test-database credentials and fake test values; the only `NEXT_PUBLIC_` variable is the API base URL; the production client bundle contains no referral variable, code, Oriflame host or admin cookie name.*
+- [x] Setup, configuration, testing, and deployment instructions are documented. *Evidence: README, `docs/guidence/try-it-locally.md`, `.env.example`, `.env.production.example`, `infrastructure/DEPLOYMENT.md`, `docs/DEPLOYMENT-GATES.md`. **Exception:** a fresh deployment and rollback have not been exercised; they need the hosting choice (ADR-004 Proposed).*
+- [x] The code is organised so a later multi-tenant phase can introduce tenant-aware configuration without rewriting core catalogue or referral services. *Evidence: services take a `ConfigProvider` (ADR-005); the catalogue source is selected by configuration behind `CatalogueSource`; no tenant constants in repositories. **Known single-country assumption:** the restricted-mode fallback URL and the referral host allow-list are constants (`services/referral.py`, `core/config.py`); a tenant phase moves them into `ReferralConfig`, a local change.*
 
 ---
 
@@ -184,8 +184,8 @@ The MVP is complete when:
 | MVP 3 | OR-E3 | 11 | 11 | ✅ |
 | MVP 4 | OR-E4 | 7 | 7 | ✅ |
 | MVP 5 | OR-E5 | 8 | 8 | ✅ |
-| MVP 6 | OR-E6 | 10 | 0 | ⬜ |
-| **Total** | **6 Epics** | **53** | **43** | **81%** |
+| MVP 6 | OR-E6 | 10 | 10 | ✅ |
+| **Total** | **6 Epics** | **53** | **53** | **100%** (OR-048 closed as not needed; OR-052 deploy exercise open) |
 
 ---
 
