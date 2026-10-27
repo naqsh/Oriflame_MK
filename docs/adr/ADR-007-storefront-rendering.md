@@ -38,7 +38,7 @@ Two facts constrain this:
 - Pages always show current catalogue data, and a backend outage never breaks a page or a build.
 
 ### Negative
-- Every catalogue page view calls the API (no cross-request caching yet).
+- Every catalogue page view called the API (no cross-request caching). Superseded by the amendment below.
 - Unknown products and categories return HTTP 200 (with `noindex`) until OR-E5.
 
 ### Neutral
@@ -54,6 +54,15 @@ Two facts constrain this:
 
 ### Alternative 3: Proxy check for every product and category slug now
 - Adds an API round-trip before every catalogue request. Deferred to OR-E5, where it can be designed together with the SEO rules.
+
+## Amendment (2026-10-28, OR-E7): request-time caching of catalogue reads
+
+Against the hosted Supabase dev database each API call took about 600 ms (100 to 130 ms database round trip, several queries per call), so listing pages paid that on every view. Catalogue reads now go through one `"use cache"` function that runs only at request time (callers already call `connection()` or read params), so decision 1 still holds: the build needs no backend and caches nothing.
+
+- Lifetime `CATALOGUE_CACHE`: stale 5 min, revalidate 10 min, expire 1 h. A sync's changes reach visitors within about 10 minutes.
+- Alternative 1's objection is handled: the cached function returns plain data, never throws, and gives any failure other than a 404 a 2-second lifetime, so an outage is not remembered. `ApiError` is rebuilt outside the cache; schemas validate after it.
+- Measured locally (next start + API on Supabase dev): cold page 0.5 to 1.5 s, cached 16 to 46 ms with no API calls; with the API stopped, cached pages still render and uncached ones show the unavailable state, then recover on the first request after the API returns.
+- Limits: the default handler is in memory per process, so serverless hosts reuse entries less (ADR-004); `"use cache: remote"` is the upgrade path. Search and the shopping list's browser check stay uncached.
 
 ## References
 

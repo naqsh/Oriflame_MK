@@ -3,6 +3,14 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup } from "@testing-library/react";
 import { afterEach, beforeEach, vi } from "vitest";
 
+// cacheLife() only runs inside a Next.js "use cache" scope; outside Next.js the
+// directive is a plain string, so record the call instead. Files may mock next/cache
+// themselves; their mock wins.
+vi.mock("next/cache", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("next/cache")>()),
+  cacheLife: vi.fn(),
+}));
+
 // No real network in unit tests: any fetch a test has not stubbed fails loudly.
 beforeEach(() => {
   vi.stubGlobal(

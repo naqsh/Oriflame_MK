@@ -34,13 +34,13 @@ export interface FetchJsonOptions {
   timeoutMs?: number;
 }
 
-async function requestJson<Schema extends z.ZodType>(
+/** Send the request and return the parsed JSON body, unvalidated. */
+async function requestBody(
   method: "GET" | "POST",
   path: string,
-  schema: Schema,
   body: unknown,
   timeoutMs: number,
-): Promise<z.infer<Schema>> {
+): Promise<unknown> {
   const url = `${getApiBaseUrl()}${path}`;
 
   let response: Response;
@@ -67,9 +67,8 @@ async function requestJson<Schema extends z.ZodType>(
     throw new ApiError("http", `${method} ${path} returned ${response.status}`, response.status);
   }
 
-  let parsedBody: unknown;
   try {
-    parsedBody = await response.json();
+    return await response.json();
   } catch {
     throw new ApiError(
       "invalid_response",
@@ -78,15 +77,27 @@ async function requestJson<Schema extends z.ZodType>(
     );
   }
 
-  const parsed = schema.safeParse(parsedBody);
+}
+
+/** Validate a JSON body with `schema`; `label` (e.g. "GET /path") is for the error message. */
+export function validateBody<Schema extends z.ZodType>(
+  label: string,
+  schema: Schema,
+  body: unknown,
+): z.infer<Schema> {
+  const parsed = schema.safeParse(body);
   if (!parsed.success) {
-    throw new ApiError(
-      "invalid_response",
-      `${method} ${path} response did not match schema`,
-      response.status,
-    );
+    throw new ApiError("invalid_response", `${label} response did not match schema`, 200);
   }
   return parsed.data;
+}
+
+/** GET `path` and return its JSON body unvalidated (for callers that validate later). */
+export function readJson(
+  path: string,
+  { timeoutMs = DEFAULT_TIMEOUT_MS }: FetchJsonOptions = {},
+): Promise<unknown> {
+  return requestBody("GET", path, undefined, timeoutMs);
 }
 
 /**
@@ -98,7 +109,9 @@ export function fetchJson<Schema extends z.ZodType>(
   schema: Schema,
   { timeoutMs = DEFAULT_TIMEOUT_MS }: FetchJsonOptions = {},
 ): Promise<z.infer<Schema>> {
-  return requestJson("GET", path, schema, undefined, timeoutMs);
+  return requestBody("GET", path, undefined, timeoutMs).then((body) =>
+    validateBody(`GET ${path}`, schema, body),
+  );
 }
 
 /** POST a JSON `body` to `path` and validate the response with `schema`. */
@@ -108,5 +121,17 @@ export function postJson<Schema extends z.ZodType>(
   schema: Schema,
   { timeoutMs = DEFAULT_TIMEOUT_MS }: FetchJsonOptions = {},
 ): Promise<z.infer<Schema>> {
-  return requestJson("POST", path, schema, body, timeoutMs);
+  return requestBody("POST", path, body, timeoutMs).then((json) =>
+    validateBody(`POST ${path}`, schema, json),
+  );
+}
+
+/** Resolve to null on 404, so pages can call notFound(). Other failures throw. */
+export async function orNotFound<T>(request: () => Promise<T>): Promise<T | null> {
+  try {
+    return await request();
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) return null;
+    throw error;
+  }
 }

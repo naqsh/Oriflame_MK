@@ -243,6 +243,7 @@ Found along the way: without `connection()`, `/status` was prerendered at build 
 | OR-E3 | MVP 3 storefront (OR-018 to OR-028), rendering decisions in ADR-007, PR naqsh/Oriflame_MK#4, merge commit `de95399` | 2026-10-27 |
 | OR-E4 | MVP 4 referral handoff (OR-029 to OR-035), ADR-002 Proposed (restricted mode until configured), PR naqsh/Oriflame_MK#5, merge commit `cc0a714` | 2026-10-27 |
 | OR-E5 | MVP 5 SEO, AIO & GEO (OR-036 to OR-043); content and guides await owner review, PR naqsh/Oriflame_MK#6, merge commit `ab817c9` | 2026-10-27 |
+| OR-E7 | Supabase dev migrated and verified; request-time caching of catalogue reads (ADR-007 amendment) | 2026-10-28 |
 | OR-E6 | MVP 6 admin and hardening (OR-044 to OR-053); MVP complete with exceptions, ADR-003 Accepted, ADR-004 Proposed, PR naqsh/Oriflame_MK#7, merge commit `1b8ab42` | 2026-10-27 |
 
 ---
