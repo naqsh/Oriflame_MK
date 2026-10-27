@@ -113,13 +113,16 @@ describe("loginAction", () => {
     [500, LOGIN_UNAVAILABLE],
   ])("maps API status %i to a generic message and sets no cookie", async (status, message) => {
     fetchMock.mockResolvedValue(json({ detail: "x" }, status));
-    expect(await loginAction({ error: null }, form(valid))).toEqual({ error: message });
+    expect(await loginAction({ error: null }, form(valid))).toEqual({ error: message, email: valid.email });
     expect(jar.has(ADMIN_COOKIE)).toBe(false);
   });
 
   it("reports the API being unreachable without leaking details", async () => {
     fetchMock.mockRejectedValue(new TypeError("connect ECONNREFUSED"));
-    expect(await loginAction({ error: null }, form(valid))).toEqual({ error: LOGIN_UNAVAILABLE });
+    expect(await loginAction({ error: null }, form(valid))).toEqual({
+      error: LOGIN_UNAVAILABLE,
+      email: valid.email,
+    });
   });
 });
 
@@ -222,5 +225,17 @@ describe("LoginForm", () => {
     const email = screen.getByLabelText("Email");
     expect(email).toHaveAttribute("aria-invalid", "true");
     expect(email).toHaveAccessibleDescription("Enter a valid email address.");
+  });
+
+  it("keeps the email after a failed attempt (React resets the form after an action)", async () => {
+    const action = vi.fn(async () => ({ error: INVALID_LOGIN, email: "owner@example.pk" }));
+    render(<LoginForm action={action} />);
+
+    await userEvent.type(screen.getByLabelText("Email"), "owner@example.pk");
+    await userEvent.type(screen.getByLabelText("Password"), "wrong{Enter}");
+
+    await screen.findByRole("alert");
+    expect(screen.getByLabelText("Email")).toHaveValue("owner@example.pk");
+    expect(screen.getByLabelText("Password")).toHaveValue("");
   });
 });

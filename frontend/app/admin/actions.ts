@@ -20,13 +20,18 @@ import { getApiBaseUrl } from "@/lib/api/client";
  */
 
 export async function loginAction(_previous: LoginState, formData: FormData): Promise<LoginState> {
+  const email = String(formData.get("email") ?? "").slice(0, 254);
   const parsed = loginFormSchema.safeParse({
     email: formData.get("email"),
     password: formData.get("password"),
   });
   if (!parsed.success) {
     const errors = parsed.error.flatten().fieldErrors;
-    return { error: null, fieldErrors: { email: errors.email?.[0], password: errors.password?.[0] } };
+    return {
+      error: null,
+      email,
+      fieldErrors: { email: errors.email?.[0], password: errors.password?.[0] },
+    };
   }
 
   let response: Response;
@@ -44,14 +49,14 @@ export async function loginAction(_previous: LoginState, formData: FormData): Pr
     });
   } catch {
     console.error("admin_login_unavailable kind=network");
-    return { error: LOGIN_UNAVAILABLE };
+    return { error: LOGIN_UNAVAILABLE, email };
   }
-  if (response.status === 401) return { error: INVALID_LOGIN };
-  if (response.status === 429) return { error: TOO_MANY_ATTEMPTS };
+  if (response.status === 401) return { error: INVALID_LOGIN, email };
+  if (response.status === 429) return { error: TOO_MANY_ATTEMPTS, email };
   const body = loginResponseSchema.safeParse(response.ok ? await response.json().catch(() => null) : null);
   if (!body.success) {
     console.error(`admin_login_unavailable kind=http status=${response.status}`);
-    return { error: LOGIN_UNAVAILABLE };
+    return { error: LOGIN_UNAVAILABLE, email };
   }
 
   await setAdminSession(body.data.token, new Date(body.data.expires_at));

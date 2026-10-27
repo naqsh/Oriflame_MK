@@ -9,6 +9,8 @@ export const TOO_MANY_ATTEMPTS = "Too many attempts. Please wait a minute and tr
 
 export interface LoginState {
   error: string | null;
+  /** The submitted email, so the form keeps it after React resets the form. */
+  email?: string;
   fieldErrors?: { email?: string; password?: string };
 }
 

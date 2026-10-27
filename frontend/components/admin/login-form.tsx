@@ -26,6 +26,7 @@ export function LoginForm({ action }: { action: LoginAction }) {
           name="email"
           type="email"
           autoComplete="username"
+          defaultValue={state.email}
           required
           maxLength={254}
           aria-invalid={errors.email ? true : undefined}
