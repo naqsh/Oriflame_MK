@@ -21,7 +21,16 @@
   - 7-question FAQ on /referral (typed in `frontend/lib/content/faq.ts`) with FAQPage JSON-LD mirroring the visible text.
   - 2 guides at /guides/[slug] plus a /guides index (typed in `frontend/lib/content/guides.ts`). **Owner approval pending:** each guide has `approval: null`, so guides and the index render with a review notice, are noindex and are left out of the sitemap. To publish, set `approval: { approvedBy, approvedOn }`; the guide and /guides then join the sitemap and become indexable.
   - Tests guard against unconfirmed promises (delivery times, discounts, guarantees) and efficacy claims.
-- [ ] OR-042: performance and Core Web Vitals
+- [x] OR-042: performance and Core Web Vitals
+  - Changes: PDP main image uses `preload` (Next 16 replacement for `priority`) and page-specific `sizes`; thumbnails get smaller `sizes`; images keep explicit 600x600 dimensions and lazy-load otherwise. Mono font no longer preloaded (only the referral code uses it). Category nav reserves its line while streaming; `main` has `min-h-svh` so the footer stays below the fold while streamed content arrives. Development-only Web Vitals console logger via a dynamic import behind `NODE_ENV` (no analytics endpoint approved; nothing is sent).
+  - Client Components audit: only interactive leaves are clients (filters, sort, add-to-list, buy button, copy, list indicator/provider/view). No third-party scripts.
+  - Bundle (all `.next/static/chunks/*.js`): before 749.0 KB raw / 233.3 KB gzip; after 749.0 KB / 233.3 KB. A static import of the logger added ~3 KB gzip to every page, so it was replaced by the dynamic import.
+  - Lighthouse 12.8.2, mobile, local `next start` (APP_ENV=production) + dev fixtures, Windows dev machine, Playwright Chromium 1248:
+    - Simulated throttling, before the CLS fixes: /products CLS 0.87, PDP CLS 0.263 (footer/main shifted by streamed content), category CLS 0.036.
+    - Simulated throttling, after: home LCP 2.6 s / CLS 0; /products 2.8 s / 0; PDP 2.8 s / 0; category 3.1 s / 0. Perf 90–95.
+    - DevTools throttling, after: home LCP 2.2 s; /products 3.4 s; PDP 2.2 s; category 3.9 s; CLS ≤ 0.001 everywhere. TBT 0.96–1.87 s, inflated by 4x CPU throttling on a loaded local machine.
+  - **Target status:** CLS < 0.1 met on all templates. LCP < 2.5 s **not yet met** on listing/category in these local runs: the LCP element is streamed per request from the API (catalogue reads use `connection()` because the build has no backend). Re-measure on the real host; if still above target, add server-side caching of catalogue reads (`"use cache"` + `cacheLife` tied to the sync interval) as a follow-up.
+  - Caching strategy (as built): static shells and content pages prerender at build; catalogue data, category nav, referral mode, sitemap and robots render per request; images go through Next.js image optimisation (`remotePatterns` from authorised hosts only, none yet).
 - [ ] OR-043: documentation sync for SEO, AIO & GEO
 
 ---

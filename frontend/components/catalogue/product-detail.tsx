@@ -55,12 +55,21 @@ function Gallery({ product }: { product: ProductDetail }) {
   const [first, ...rest] = product.images;
   return (
     <div className="space-y-3">
-      <ProductImage image={first ?? null} productName={product.name} />
+      <ProductImage
+        image={first ?? null}
+        productName={product.name}
+        sizes="(min-width: 1152px) 560px, (min-width: 768px) 50vw, 100vw"
+        preload
+      />
       {rest.length > 0 ? (
         <ul className="grid grid-cols-4 gap-2">
           {rest.map((image) => (
             <li key={image.url}>
-              <ProductImage image={image} productName={product.name} />
+              <ProductImage
+                image={image}
+                productName={product.name}
+                sizes="(min-width: 768px) 12vw, 25vw"
+              />
             </li>
           ))}
         </ul>
