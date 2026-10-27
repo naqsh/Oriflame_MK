@@ -64,11 +64,11 @@ Details in `docs/tasks/lessons.md`.
 
 ## Open items
 
-1. **Hosting (ADR-004 Proposed):** the owner chooses providers and costs. Then deploy to a non-production environment following `infrastructure/DEPLOYMENT.md`, exercise one rollback, validate JSON-LD externally and run Lighthouse on the real host (listing/category LCP was 2.8 to 3.9 s locally; consider caching catalogue reads).
+1. **Hosting (ADR-004 Proposed):** the owner chooses providers and costs. Then deploy to a non-production environment following `infrastructure/DEPLOYMENT.md`, exercise one rollback, validate JSON-LD externally and run Lighthouse on the real host (listing/category LCP was 2.8 to 3.9 s locally before OR-E7 added server-side caching of catalogue reads).
 2. **Referral (ADR-002 Proposed):** the owner fills in the referral settings and confirms attribution with Oriflame. Restricted mode until then.
 3. **Catalogue (ADR-001 Proposed):** a permitted source is needed; development fixtures only.
 4. **Content:** the owner reviews the content pages (`CONTENT_REVIEWED`) and guides (`approval`), and sets `CONTACT_*` if wanted.
-5. **Owner's `.env`:** fix `POSTGRES_URL` (remove `[ ]`, drop the stray `POSTGRES_PASSWORD`, add `TEST_POSTGRES_URL`), then run `uv run alembic upgrade head` against the Supabase dev project (never tested there; seven migrations) and check its Postgres major version against `postgres:17`.
+5. **Supabase dev (done 2026-10-28):** `POSTGRES_URL` fixed, seven migrations applied on Postgres 17.11, fixtures loaded, API verified end to end (see `docs/DATABASE.md`). Optional: add `TEST_POSTGRES_URL` to `.env` for the local test database.
 6. **Not built, needs a decision:** OR-048 product visibility/featured; the axe accessibility spec (`@axe-core/playwright` dependency); a CSP nonce (conflicts with Partial Prerendering); a shared rate-limit store for more than one API instance.
 7. **Optional:** Dependabot for the pinned action SHAs.
 

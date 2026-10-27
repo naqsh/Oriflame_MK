@@ -1,6 +1,8 @@
+import { cacheLife } from "next/cache";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  CATALOGUE_CACHE,
   getCategories,
   getCategory,
   getProduct,
@@ -25,6 +27,7 @@ function requestedUrl(fetchMock: ReturnType<typeof vi.fn>): URL {
 
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.mocked(cacheLife).mockClear();
 });
 
 describe("catalogue API functions", () => {
@@ -127,5 +130,47 @@ describe("catalogue API functions", () => {
     expect(url.pathname).toBe("/api/v1/search");
     expect(url.searchParams.get("q")).toBe("گلاب & cream");
     expect(url.searchParams.get("page_size")).toBe("10");
+  });
+});
+
+describe("catalogue read caching", () => {
+  it("caches successful reads for the catalogue lifetime", async () => {
+    stubFetch(jsonResponse(PAGE));
+    await getProducts();
+    expect(cacheLife).toHaveBeenCalledWith(CATALOGUE_CACHE);
+  });
+
+  it("caches a 404 like a success: an unknown slug is a stable answer", async () => {
+    stubFetch(jsonResponse({ detail: "Product not found" }, 404));
+    await expect(getProduct("missing")).resolves.toBeNull();
+    expect(cacheLife).toHaveBeenCalledWith(CATALOGUE_CACHE);
+  });
+
+  it.each([
+    ["a server error", () => stubFetch(jsonResponse({ detail: "boom" }, 503))],
+    ["a network failure", () => vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("fetch failed")))],
+  ])("keeps %s out of the cache and rethrows it as ApiError", async (_label, stub) => {
+    stub();
+    const error = await getCategories().catch((caught: unknown) => caught);
+    expect(error).toBeInstanceOf(ApiError);
+    const lifetime = vi.mocked(cacheLife).mock.calls[0]?.[0];
+    expect(lifetime).not.toEqual(CATALOGUE_CACHE);
+    expect(lifetime).toMatchObject({ stale: 0 });
+  });
+
+  it("keeps the HTTP status on a rethrown failure", async () => {
+    stubFetch(jsonResponse({ detail: "boom" }, 503));
+    await expect(getCategories()).rejects.toMatchObject({ kind: "http", status: 503 });
+  });
+
+  it("validates after the cache, so a malformed cached body still fails", async () => {
+    stubFetch(jsonResponse({ items: "not a list" }));
+    await expect(getCategories()).rejects.toMatchObject({ kind: "invalid_response" });
+  });
+
+  it("does not cache search", async () => {
+    stubFetch(jsonResponse(PAGE));
+    await searchProducts({ q: "cream" });
+    expect(cacheLife).not.toHaveBeenCalled();
   });
 });

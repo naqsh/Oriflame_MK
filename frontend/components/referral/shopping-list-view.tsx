@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { formatPrice } from "@/components/product/price";
 import { BuyFromOriflame } from "@/components/referral/buy-from-oriflame";
 import { useShoppingList } from "@/components/referral/shopping-list-provider";
-import { getProduct } from "@/lib/api/catalogue";
+import { checkProduct } from "@/lib/api/product-check";
 import { MAX_QUANTITY, indicativeTotal, itemCount } from "@/lib/shopping-list";
 
 type Flag = { kind: "unavailable" } | { kind: "price"; from: string | null; to: string | null };
@@ -30,7 +30,7 @@ function useFreshness() {
     void Promise.all(
       pending.map(async (item) => {
         try {
-          const product = await getProduct(item.slug);
+          const product = await checkProduct(item.slug);
           if (product === null) return [item.slug, { kind: "unavailable" }] as const;
           if (product.price_pkr !== item.price_pkr) {
             return [item.slug, { kind: "price", from: item.price_pkr, to: product.price_pkr }] as const;

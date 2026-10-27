@@ -79,6 +79,8 @@ Supabase exposes tables in the `public` schema through its auto-generated Data A
 | Tests / CI | `TEST_POSTGRES_URL` → PostgreSQL service container or local Supabase — never the hosted project |
 | Production | Separate Supabase project; `POSTGRES_URL` set in deployment secrets |
 
+**Dev project status (2026-10-28):** all seven migrations applied (`007_audit_logs` head) on Postgres 17.11, matching the `postgres:17` used in tests/CI. Every `public` table has RLS on and no policies; `pg_trgm` is in `extensions` and fuzzy search works. Development fixtures are loaded (12 products, `dev_fixture`). Round trip from the developer machine is 100 to 130 ms on the direct connection.
+
 Use a separate Supabase project for production; do not share a database between development and production.
 
 ---
