@@ -31,7 +31,18 @@
     - DevTools throttling, after: home LCP 2.2 s; /products 3.4 s; PDP 2.2 s; category 3.9 s; CLS ≤ 0.001 everywhere. TBT 0.96–1.87 s, inflated by 4x CPU throttling on a loaded local machine.
   - **Target status:** CLS < 0.1 met on all templates. LCP < 2.5 s **not yet met** on listing/category in these local runs: the LCP element is streamed per request from the API (catalogue reads use `connection()` because the build has no backend). Re-measure on the real host; if still above target, add server-side caching of catalogue reads (`"use cache"` + `cacheLife` tied to the sync interval) as a follow-up.
   - Caching strategy (as built): static shells and content pages prerender at build; catalogue data, category nav, referral mode, sitemap and robots render per request; images go through Next.js image optimisation (`remotePatterns` from authorised hosts only, none yet).
-- [ ] OR-043: documentation sync for SEO, AIO & GEO
+- [x] OR-043: `docs/SEO-AIO-GEO.md` rewritten as built (configuration, canonical, noindex, sitemap scope, robots, JSON-LD rules table, content, performance); `docs/example-code/jsonld-pattern.ts`; `docs/learning/2026-10-truthful-structured-data.md`; PLAN (MVP 5 ✅, summary table corrected to 43/53), AGENT.md, README, frontend/AGENT.md and lessons updated. No ranking promises.
+
+
+### Review
+
+**OR-E5 summary:** per-page metadata with query-free canonicals, `SITE_URL`-based absolute URLs, robots.txt and a per-request sitemap that index only production; breadcrumbs with BreadcrumbList; truthful JSON-LD (no Offer until availability is verified, nothing for fixtures, no ratings); FAQPage on `/referral`; about, contact, privacy, terms and cookies pages; two buying guides behind owner approval; CLS fixes and an LCP image preload.
+
+Evidence: frontend gate (lint, typecheck, 274 Vitest, production build) and Playwright 2/2 on the final branch; backend gate 362 passed (OR-037 was the only backend change). Production runs as recorded per task. Lighthouse numbers under OR-042.
+
+**Owner actions:** review the content pages and set `CONTENT_REVIEWED`; review each guide and record `approval`; set `CONTACT_EMAIL`/`CONTACT_WHATSAPP` if wanted; set `SITE_URL` and `APP_ENV=production` on the real host.
+
+**Open items:** external structured-data validation and Lighthouse on the deployed site (OR-052); LCP on listing/category pages above 2.5 s in local lab runs (server-side caching of catalogue reads if it persists on the real host).
 
 ---
 

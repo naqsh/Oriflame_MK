@@ -64,7 +64,7 @@ co-located AGENT.md files alongside the code they govern.
 | **MVP 2** | Catalogue data: permitted-source investigation, minimal schema, idempotent sync with sync-run records | ✅ Completed (development fixtures only; ADR-001 Proposed) |
 | **MVP 3** | Storefront: homepage, listing/category pages, product detail, search, filter/sort, local shopping list | ✅ Completed (rendering decisions in ADR-007) |
 | **MVP 4** | Referral handoff: `ReferralService`, config provider, host validation, manual-code fallback, click analytics | ✅ Completed (ADR-002 Proposed: restricted mode until the referral is configured) |
-| **MVP 5** | SEO, AIO & GEO: metadata, canonical URLs, sitemap, robots.txt, JSON-LD, FAQs/guides, content pages | ⬜ Planned |
+| **MVP 5** | SEO, AIO & GEO: metadata, canonical URLs, sitemap, robots.txt, JSON-LD, FAQs/guides, content pages | ✅ Completed (guides and content pages await owner review) |
 | **MVP 6** | Admin & hardening: protected admin area, audit logs, security headers, rate limits, E2E tests, deployment docs | ⬜ Planned |
 
 Acceptance criteria for the whole MVP: `docs/PLAN.md` → **MVP Acceptance Criteria**.
