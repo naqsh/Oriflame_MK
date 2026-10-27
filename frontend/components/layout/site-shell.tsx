@@ -8,7 +8,8 @@ export function SiteShell({ children }: { children: ReactNode }) {
   return (
     <>
       <SiteHeader />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">{children}</main>
+      {/* min-h-svh keeps the footer below the fold while streamed content arrives (CLS). */}
+      <main className="mx-auto min-h-svh w-full max-w-6xl flex-1 px-4 py-8">{children}</main>
       <SiteFooter />
     </>
   );

@@ -21,9 +21,12 @@ export function SiteHeader() {
             <ListIndicator />
           </div>
         </div>
-        <Suspense fallback={null}>
-          <CategoryNav />
-        </Suspense>
+        {/* Reserve the nav's line while it streams in, so the page below does not jump. */}
+        <div className="min-h-5">
+          <Suspense fallback={null}>
+            <CategoryNav />
+          </Suspense>
+        </div>
       </div>
     </header>
   );

@@ -119,6 +119,7 @@ def test_list_returns_visible_products_with_page_metadata(
         },
         "data_source": "dev_fixture",
         "is_development_data": True,
+        "last_synced_at": "2026-10-26T00:00:00Z",
     }
     by_name = {item["name"]: item for item in body["items"]}
     assert by_name["Cedar Lotion"]["price_pkr"] is None

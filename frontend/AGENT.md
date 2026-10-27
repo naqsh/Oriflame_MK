@@ -219,7 +219,7 @@ Show, where available:
 
 ## SEO, AIO & GEO
 
-Full rules: `docs/SEO-AIO-GEO.md`. Every indexable page provides a unique title, meta description, canonical URL, Open Graph metadata, and breadcrumbs. JSON-LD builders live in `lib/seo/`; `Offer` is emitted only when price/availability are verified.
+Full rules: `docs/SEO-AIO-GEO.md`. Every indexable page provides a unique title, meta description, canonical URL, Open Graph metadata, and breadcrumbs. JSON-LD builders live in `lib/seo/`; `Offer` is emitted only when price/availability are verified (pattern: `docs/example-code/jsonld-pattern.ts`, rationale: `docs/learning/2026-10-truthful-structured-data.md`). Canonicals never carry query strings; only `APP_ENV=production` is indexable; content pages, FAQ and guides are typed content in `lib/content/` (guides publish only with recorded owner approval).
 
 ---
 

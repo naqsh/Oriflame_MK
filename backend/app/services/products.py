@@ -49,6 +49,7 @@ def _summary(product: Product, policy: AvailabilityPolicy) -> ProductSummary:
         availability=availability_for(product, "list", policy),
         data_source=product.source,
         is_development_data=product.source == FIXTURE_SOURCE_NAME,
+        last_synced_at=product.last_synced_at,
     )
 
 
@@ -93,7 +94,6 @@ class ProductService:
                 for c in sorted(product.categories, key=lambda c: c.name.lower())
             ],
             source_url=product.source_url,
-            last_synced_at=product.last_synced_at,
             related=[_summary(p, self._policy) for p in related_products(self._session, product)],
         )
 

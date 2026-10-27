@@ -13,6 +13,7 @@ The `docs/learning/` directory is used to capture new techniques, non-trivial bu
 | Date | Learning |
 |---|---|
 | 2026-10 | [Idempotent catalogue upserts](2026-10-idempotent-catalogue-upserts.md) (OR-E2) |
+| 2026-10 | [Truthful structured data: gating Offer and Product](2026-10-truthful-structured-data.md) (OR-E5) |
 
 ## When to create a learning file
 

@@ -18,6 +18,7 @@ export function productSummary(overrides: Partial<ProductSummary> = {}): Product
     },
     data_source: "dev_fixture",
     is_development_data: true,
+    last_synced_at: "2026-10-26T00:00:00Z",
     ...overrides,
   };
 }
@@ -36,7 +37,6 @@ export function productDetailPayload(): Record<string, unknown> {
     images: [productSummary().primary_image],
     categories: [{ slug: "sample-category-a", name: "Sample Category A" }],
     source_url: "http://localhost:3000/dev-fixture/products/dev-sample-01",
-    last_synced_at: "2026-10-26T00:00:00Z",
     related: [productSummary({ slug: "sample-product-02", name: "Sample Product 02" })],
   };
 }

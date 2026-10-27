@@ -40,6 +40,7 @@ export const productSummarySchema = z.object({
   availability: availabilitySchema,
   data_source: z.string().min(1),
   is_development_data: z.boolean(),
+  last_synced_at: z.iso.datetime({ offset: true }),
 });
 
 export const productPageSchema = z.object({
@@ -58,7 +59,6 @@ export const productDetailSchema = productSummarySchema.extend({
   images: z.array(imageSchema),
   categories: z.array(categoryRefSchema),
   source_url: z.url({ protocol: /^https?$/ }),
-  last_synced_at: z.iso.datetime({ offset: true }),
   related: z.array(productSummarySchema),
 });
 

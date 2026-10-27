@@ -1,12 +1,15 @@
 import type { Metadata } from "next";
 
 import { ShoppingListView } from "@/components/referral/shopping-list-view";
+import { buildMetadata } from "@/lib/seo/metadata";
 
 // Personal to each browser, so never indexed.
-export const metadata: Metadata = {
+export const metadata: Metadata = buildMetadata({
   title: "Your shopping list",
-  robots: { index: false, follow: true },
-};
+  description: "Your shopping list, kept only in this browser.",
+  path: "/list",
+  noindex: true,
+});
 
 export default function ListPage() {
   return (

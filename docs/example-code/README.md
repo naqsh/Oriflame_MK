@@ -23,6 +23,7 @@ docs/example-code/
 ├── referral-service-pattern.py   # ReferralService with host allow-list
 ├── upsert-pattern.py             # Idempotent SQLAlchemy upsert + sync-run record
 ├── component-pattern.tsx         # Server Component with Zod-validated data
+├── jsonld-pattern.ts             # Truthful JSON-LD: gated Offer/Product, escaped serialisation
 └── test-pattern.py               # pytest structure
 ```
 

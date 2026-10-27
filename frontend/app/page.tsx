@@ -1,12 +1,23 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import { HomeCatalogue, HomeCatalogueFallback } from "@/components/home/home-catalogue";
 import { HowItWorks } from "@/components/home/how-it-works";
+import { JsonLd } from "@/components/layout/json-ld";
+import { organizationJsonLd, websiteJsonLd } from "@/lib/seo/jsonld";
+import { buildMetadata } from "@/lib/seo/metadata";
+import { SITE_DESCRIPTION, SITE_NAME } from "@/lib/seo/site";
+
+export const metadata: Metadata = {
+  ...buildMetadata({ title: SITE_NAME, description: SITE_DESCRIPTION, path: "/" }),
+  title: { absolute: SITE_NAME },
+};
 
 /** Static hero and how-it-works; the catalogue streams in per request (OR-023). */
 export default function HomePage() {
   return (
     <div className="space-y-12">
+      <JsonLd data={[websiteJsonLd(), organizationJsonLd()]} />
       <section className="space-y-4">
         <h1 className="font-heading text-3xl font-semibold sm:text-4xl">
           Find Oriflame Pakistan products, then buy on Oriflame
