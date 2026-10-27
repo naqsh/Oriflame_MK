@@ -39,6 +39,30 @@ ReferralMethod = Literal["official_url", "manual_code"]
 CatalogueSourceName = Literal["fixture"]
 
 
+def referral_url_problem(url: str) -> str | None:
+    """Why ``url`` is not an acceptable referral destination, or None if it is.
+
+    Shared by startup validation and ReferralService (checked again on every resolve).
+    The reason never includes the URL itself.
+    """
+    parts = urlsplit(url)
+    if parts.scheme != "https":
+        return "must use https"
+    try:
+        port = parts.port
+    except ValueError:
+        return "has an invalid port"
+    if parts.username or parts.password:
+        return "must not contain credentials"
+    if port not in (None, 443):
+        return "must not use a non-default port"
+    if parts.fragment:
+        return "must not contain a fragment"
+    if (parts.hostname or "").lower() not in ALLOWED_REFERRAL_HOSTS:
+        return "host is not an allowed Oriflame host"
+    return None
+
+
 class ConfigurationError(RuntimeError):
     """Raised when settings are missing or invalid. Messages never include values."""
 
@@ -147,12 +171,9 @@ class Settings(BaseSettings):
     def _check_referral_host(cls, value: HttpUrl | None) -> HttpUrl | None:
         if value is None:
             return None
-        if value.scheme != "https":
-            raise ValueError("ORIFLAME_REFERRAL_URL must use https")
-        if value.username or value.password:
-            raise ValueError("ORIFLAME_REFERRAL_URL must not contain credentials")
-        if (value.host or "").lower() not in ALLOWED_REFERRAL_HOSTS:
-            raise ValueError("ORIFLAME_REFERRAL_URL host is not an allowed Oriflame host")
+        problem = referral_url_problem(str(value))
+        if problem:
+            raise ValueError(f"ORIFLAME_REFERRAL_URL {problem}")
         return value
 
     @model_validator(mode="after")

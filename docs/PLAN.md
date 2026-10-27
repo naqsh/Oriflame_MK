@@ -106,7 +106,7 @@ Fresh autonomous kickoff only (not every "hi"): then read `docs/KICKOFF-PROMPT.m
 | Task ID | Summary | Area | Effort | Depends on | Status | Agent |
 |---|---|---|---|---|---|---|
 | OR-029 | Confirm referral mechanism and record ADR-002 | Docs / Research | S | OR-002 | ✅ | Coding |
-| OR-030 | ReferralService | Backend | M | OR-029 | ⬜ | Coding |
+| OR-030 | ReferralService | Backend | M | OR-029 | ✅ | Coding |
 | OR-031 | Referral click storage | Backend / Database | S | OR-030 | ⬜ | Coding |
 | OR-032 | Handoff API endpoint | Backend | S | OR-030, OR-031 | ⬜ | Coding |
 | OR-033 | BuyFromOriflame and CopyReferralCode components | Frontend | M | OR-032, OR-025, OR-027 | ⬜ | Coding |

@@ -13,7 +13,7 @@
 ### Plan
 
 - [x] OR-029: [ADR-002](../adr/ADR-002-referral-method.md) (Proposed): both methods by configuration, restricted mode (plain link to `https://pk.oriflame.com/`, no referral claim) until a referral is configured, allow-list `pk.oriflame.com` unchanged, the code is never appended to URLs. Indexed; `REFERRAL.md` links it. `test_referral_adr.py` checks that the code allow-list matches the ADR line exactly.
-- [ ] OR-030: ReferralService
+- [x] OR-030: `services/referral.py` `ReferralService(config_provider)`. `resolve()` returns an `official_url` / `manual_code` / `unavailable` union (`schemas/referral.py`); `status()` returns `configured` / `not_configured` / `invalid` with no code or URL. URL rules shared with startup in `referral_url_problem` (https, allow-listed host, no credentials, fragment or non-default port), re-checked on every resolve. The restricted-mode fallback is `https://pk.oriflame.com/`, and all text is centralised with no attribution claims. Evidence: `test_referral.py` (22 tests) covers each variant, invalid URLs at resolve time, startup rejection of port, fragment and credentials without echoing the URL, config changes picked up on the next resolve, config read only through the provider, and text free of attribution wording. Backend gate passed.
 - [ ] OR-031: referral click storage
 - [ ] OR-032: handoff API endpoint
 - [ ] OR-033: BuyFromOriflame and CopyReferralCode components
