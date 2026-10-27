@@ -11,3 +11,8 @@ export interface LoginState {
   error: string | null;
   fieldErrors?: { email?: string; password?: string };
 }
+
+export interface SyncActionState {
+  ok: boolean;
+  message: string;
+}
