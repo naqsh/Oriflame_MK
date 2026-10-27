@@ -3,7 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 
 import { SiteShell } from "@/components/layout/site-shell";
 import { ShoppingListProvider } from "@/components/referral/shopping-list-provider";
-import { SITE_DESCRIPTION, SITE_NAME } from "@/lib/seo/site";
+import { SITE_DESCRIPTION, SITE_NAME, getSiteUrl } from "@/lib/seo/site";
 
 import "./globals.css";
 
@@ -18,8 +18,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(getSiteUrl()),
   title: { default: SITE_NAME, template: `%s | ${SITE_NAME}` },
   description: SITE_DESCRIPTION,
+  openGraph: { type: "website", siteName: SITE_NAME, locale: "en_PK" },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

@@ -6,11 +6,23 @@
 
 ## Current Epic
 
-**OR-E4 — MVP 4: Referral Handoff**, merged in PR naqsh/Oriflame_MK#5 (`cc0a714`). Next epic: OR-E5 (SEO, AIO & GEO). See `docs/PLAN.md`.
-
-**Requirements agreed with the owner (2026-10-27):** referral placeholders are in the owner's local `.env` (empty for now); checkout, payment and delivery always happen on Oriflame's main site, and the shopping-list items go with the visitor in the way Oriflame permits (`docs/REFERRAL.md`, "Checkout handoff").
+**OR-E5 — MVP 5: SEO, AIO & GEO** on branch `epic/E5-seo-aio-geo` (from `epic/autonomus-implementation` at `1fbb97e`). The owner authorised completing the remaining epics, including PRs and merges, without asking (2026-10-27). See `docs/PLAN.md`.
 
 ### Plan
+
+- [x] OR-036: `lib/seo/metadata.ts` `buildMetadata({title, description, path, image?, noindex?})` gives each page a title, description, absolute canonical (query string and fragment always stripped, so filter, sort, page and tracking variants share one canonical), Open Graph (`en_PK`) and a Twitter card. `describe()` trims sourced text to about 155 characters, with a specific name-and-category fallback. `getSiteUrl()` reads the server-side `SITE_URL` (required in production; `next build` fails without it, as checked: exit 1 without, 0 with); `metadataBase` is set in the layout. Pages: home (absolute title), `/products`, `/referral`, `/list` and `/search` (noindex), and `generateMetadata` for products (development fixture products are noindex) and categories (`lib/seo/catalogue-metadata.ts`, degrading when the API is down). `SITE_URL` added to `.env.example`, CI's build step and `DEPLOYMENT.md`. Evidence: `seo-metadata.test.ts` (20); frontend gate 229 Vitest (`lib/seo` 100% of lines), build, Playwright 2/2.
+- [ ] OR-037: sitemap and robots
+- [ ] OR-038: breadcrumbs and internal linking
+- [ ] OR-039: JSON-LD builders
+- [ ] OR-040: about, contact, privacy, terms, cookies
+- [ ] OR-041: FAQs and guides
+- [ ] OR-042: performance and Core Web Vitals
+- [ ] OR-043: documentation sync for SEO, AIO & GEO
+
+---
+
+## OR-E4 record (merged in PR naqsh/Oriflame_MK#5, `cc0a714`)
+
 
 - [x] OR-029: [ADR-002](../adr/ADR-002-referral-method.md) (Proposed): both methods by configuration, restricted mode (plain link to `https://pk.oriflame.com/`, no referral claim) until a referral is configured, allow-list `pk.oriflame.com` unchanged, the code is never appended to URLs. Indexed; `REFERRAL.md` links it. `test_referral_adr.py` checks that the code allow-list matches the ADR line exactly.
 - [x] OR-030: `services/referral.py` `ReferralService(config_provider)`. `resolve()` returns an `official_url` / `manual_code` / `unavailable` union (`schemas/referral.py`); `status()` returns `configured` / `not_configured` / `invalid` with no code or URL. URL rules shared with startup in `referral_url_problem` (https, allow-listed host, no credentials, fragment or non-default port), re-checked on every resolve. The restricted-mode fallback is `https://pk.oriflame.com/`, and all text is centralised with no attribution claims. Evidence: `test_referral.py` (22 tests) covers each variant, invalid URLs at resolve time, startup rejection of port, fragment and credentials without echoing the URL, config changes picked up on the next resolve, config read only through the provider, and text free of attribution wording. Backend gate passed.

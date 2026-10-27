@@ -28,6 +28,8 @@
 | `AVAILABILITY_MAX_AGE_HOURS` | Backend | Optional, default `24` (1 to 720). How long a source's stock check counts as verified; older data is shown as "Availability not confirmed" |
 | `CATALOGUE_SOURCE` | Backend | Only `fixture` exists until ADR-001 accepts a permitted source, and fixtures refuse to load in production, so a production catalogue sync cannot run yet |
 | Admin auth secrets | Backend | Per chosen admin auth (ADR) |
+| `SITE_URL` | Frontend **build** and runtime | The store's public origin, e.g. `https://example.pk` (not secret). Used for canonical URLs, Open Graph, the sitemap and robots.txt. Required: a production build fails without it |
+| `APP_ENV` (frontend) | Frontend runtime | `production` only on the live store. Anything else makes robots.txt disallow everything and the sitemap empty, so staging and fixture data are never indexed |
 | API base URL (`NEXT_PUBLIC_API_BASE_URL`) | Frontend **build** | Public backend URL (no secrets). Next.js inlines it at build time, so set it before `npm run build`. Required in production: without it `/status` reports the backend unavailable |
 
 ---

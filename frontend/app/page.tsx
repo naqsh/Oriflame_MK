@@ -1,7 +1,15 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import { HomeCatalogue, HomeCatalogueFallback } from "@/components/home/home-catalogue";
 import { HowItWorks } from "@/components/home/how-it-works";
+import { buildMetadata } from "@/lib/seo/metadata";
+import { SITE_DESCRIPTION, SITE_NAME } from "@/lib/seo/site";
+
+export const metadata: Metadata = {
+  ...buildMetadata({ title: SITE_NAME, description: SITE_DESCRIPTION, path: "/" }),
+  title: { absolute: SITE_NAME },
+};
 
 /** Static hero and how-it-works; the catalogue streams in per request (OR-023). */
 export default function HomePage() {

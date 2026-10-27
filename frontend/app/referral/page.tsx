@@ -3,12 +3,15 @@ import { Suspense } from "react";
 
 import { BuyFromOriflame } from "@/components/referral/buy-from-oriflame";
 import { CurrentReferralSteps, ReferralSteps } from "@/components/referral/referral-steps";
+import { buildMetadata } from "@/lib/seo/metadata";
 import { SITE_DISCLAIMER } from "@/lib/seo/site";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildMetadata({
   title: "How buying works",
-  description: "How to buy the products you find here on Oriflame's official Pakistan website.",
-};
+  description:
+    "How to buy the products you find here: you continue on Oriflame's official Pakistan website, where checkout, payment and delivery happen.",
+  path: "/referral",
+});
 
 const FAQ = [
   {

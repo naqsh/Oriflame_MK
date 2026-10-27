@@ -3,12 +3,15 @@ import { Suspense } from "react";
 
 import { SearchResults } from "@/components/catalogue/search-results";
 import { ProductGridSkeleton } from "@/components/product/product-grid-skeleton";
+import { buildMetadata } from "@/lib/seo/metadata";
 
 // Search result pages are never indexed (finalised with the other SEO rules in OR-E5).
-export const metadata: Metadata = {
+export const metadata: Metadata = buildMetadata({
   title: "Search",
-  robots: { index: false, follow: true },
-};
+  description: "Search Oriflame Pakistan products listed on this independent store.",
+  path: "/search",
+  noindex: true,
+});
 
 export default function SearchPage({ searchParams }: PageProps<"/search">) {
   return (
