@@ -72,6 +72,7 @@
 | Session Date | Key Lessons Learned |
 |---|---|
 | 2026-10-26 | Documentation structure established from Claude.md spec |
+| 2026-10-27 | OR-E5 and OR-E6 completed autonomously. Read the Playwright web-server log, not only the pass count; enumerate routes from OpenAPI, since FastAPI 0.16x nests routers; keep long edit scripts out of bash heredocs |
 
 ---
 
