@@ -125,8 +125,8 @@ Fresh autonomous kickoff only (not every "hi"): then read `docs/KICKOFF-PROMPT.m
 |---|---|---|---|---|---|---|
 | OR-036 | Metadata builders: titles, descriptions, canonical, Open Graph | Frontend | M | OR-E3 | ✅ | Coding |
 | OR-037 | XML sitemap and robots.txt | Frontend | S | OR-036 | ✅ | Coding |
-| OR-038 | Breadcrumbs and internal linking | Frontend | S | OR-036 | ⬜ | Coding |
-| OR-039 | JSON-LD builders: Product, Offer, WebSite, Organization | Frontend | M | OR-036, OR-021 | ⬜ | Coding |
+| OR-038 | Breadcrumbs and internal linking | Frontend | S | OR-036 | ✅ | Coding |
+| OR-039 | JSON-LD builders: Product, Offer, WebSite, Organization | Frontend | M | OR-036, OR-021 | ✅ | Coding |
 | OR-040 | About, contact, privacy, terms, and cookie pages | Frontend / Content | M | OR-036 | ⬜ | Coding |
 | OR-041 | Original FAQs and buying guides | Content / Frontend | M | OR-040 | ⬜ | Coding |
 | OR-042 | Performance and Core Web Vitals | Frontend / Performance | M | OR-E3 | ⬜ | Coding |

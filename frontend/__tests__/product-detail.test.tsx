@@ -144,7 +144,10 @@ describe("ProductDetailContent", () => {
       "Soft glow.",
       "A & B",
     ]);
-    expect(container.querySelector("script, b, [onerror]")).toBeNull();
+    // JSON-LD is a data block, not executable markup; nothing else may appear.
+    expect(
+      container.querySelector('script:not([type="application/ld+json"]), b, [onerror]'),
+    ).toBeNull();
   });
 
   it("adds no claims beyond the sourced text", async () => {

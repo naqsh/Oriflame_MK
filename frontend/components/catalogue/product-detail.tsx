@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
-import { Breadcrumbs } from "@/components/layout/breadcrumbs";
+import { type Crumb, Breadcrumbs } from "@/components/layout/breadcrumbs";
+import { JsonLd } from "@/components/layout/json-ld";
 import { DevDataBanner } from "@/components/layout/dev-data-banner";
 import { AvailabilityBadge } from "@/components/product/availability-badge";
 import { Price } from "@/components/product/price";
@@ -8,9 +9,10 @@ import { ProductGrid } from "@/components/product/product-grid";
 import { ProductImage } from "@/components/product/product-image";
 import { AddToListButton } from "@/components/referral/add-to-list-button";
 import { BuyFromOriflame } from "@/components/referral/buy-from-oriflame";
-import { getProduct } from "@/lib/api/catalogue";
+import { getCategory, getProduct } from "@/lib/api/catalogue";
 import { ApiError } from "@/lib/api/client";
 import type { ProductDetail } from "@/lib/api/schemas/catalogue";
+import { breadcrumbJsonLd, productJsonLd } from "@/lib/seo/jsonld";
 import { toParagraphs } from "@/lib/text";
 
 export const PRODUCT_UNAVAILABLE =
@@ -22,6 +24,27 @@ function formatDate(iso: string): string {
   return new Intl.DateTimeFormat("en-PK", { dateStyle: "medium", timeZone: "Asia/Karachi" }).format(
     new Date(iso),
   );
+}
+
+/**
+ * Trail to the product's primary category: the alphabetically first one (the API sorts
+ * categories by name), with all its ancestors. If they cannot be loaded, just the category.
+ */
+async function categoryTrail(product: ProductDetail): Promise<Crumb[]> {
+  const [primary] = product.categories;
+  if (!primary) return [{ name: "All products", href: "/products" }];
+  const own = { name: primary.name, href: `/categories/${primary.slug}` };
+  try {
+    const detail = await getCategory(primary.slug);
+    if (!detail) return [own];
+    return [
+      ...detail.ancestors.map((a) => ({ name: a.name, href: `/categories/${a.slug}` })),
+      own,
+    ];
+  } catch (error) {
+    if (!(error instanceof ApiError)) throw error;
+    return [own];
+  }
 }
 
 function sourceHost(url: string): string {
@@ -68,20 +91,18 @@ export async function ProductDetailContent({ params }: { params: Promise<{ slug:
   if (product === null) notFound();
 
   const paragraphs = toParagraphs(product.description);
-  const [primaryCategory] = product.categories;
+  const crumbs: Crumb[] = [
+    { name: "Home", href: "/" },
+    ...(await categoryTrail(product)),
+    { name: product.name, href: `/products/${product.slug}` },
+  ];
+  const structured = productJsonLd(product); // null for development fixtures
 
   return (
     <article className="space-y-10">
       <DevDataBanner items={[product, ...product.related]} />
-      <Breadcrumbs
-        items={[
-          { name: "Home", href: "/" },
-          ...(primaryCategory
-            ? [{ name: primaryCategory.name, href: `/categories/${primaryCategory.slug}` }]
-            : [{ name: "All products", href: "/products" }]),
-          { name: product.name, href: `/products/${product.slug}` },
-        ]}
-      />
+      <Breadcrumbs items={crumbs} />
+      <JsonLd data={structured ? [breadcrumbJsonLd(crumbs), structured] : breadcrumbJsonLd(crumbs)} />
       <div className="grid gap-8 md:grid-cols-2">
         <Gallery product={product} />
         <div className="space-y-4">

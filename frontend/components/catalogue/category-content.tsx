@@ -2,11 +2,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { ProductListing } from "@/components/filters/product-listing";
-import { Breadcrumbs } from "@/components/layout/breadcrumbs";
+import { type Crumb, Breadcrumbs } from "@/components/layout/breadcrumbs";
+import { JsonLd } from "@/components/layout/json-ld";
 import { getCategory } from "@/lib/api/catalogue";
 import { ApiError } from "@/lib/api/client";
 import type { CategoryDetail } from "@/lib/api/schemas/catalogue";
 import { type RawSearchParams, parseListingParams } from "@/lib/listing";
+import { breadcrumbJsonLd } from "@/lib/seo/jsonld";
 
 export const CATEGORY_UNAVAILABLE =
   "This category is temporarily unavailable. Please try again shortly.";
@@ -42,17 +44,18 @@ export async function CategoryContent({
   // The category comes from the path; a ?category= parameter is ignored here.
   const listing = { ...parseListingParams(await searchParams), category: undefined };
   const subcategories = category.children.filter((child) => child.product_count > 0);
+  // Every ancestor, root first: nothing is truncated in the visible or structured trail.
+  const crumbs: Crumb[] = [
+    { name: "Home", href: "/" },
+    ...category.ancestors.map((a) => ({ name: a.name, href: `/categories/${a.slug}` })),
+    { name: category.name, href: basePath },
+  ];
 
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <Breadcrumbs
-          items={[
-            { name: "Home", href: "/" },
-            ...category.ancestors.map((a) => ({ name: a.name, href: `/categories/${a.slug}` })),
-            { name: category.name, href: basePath },
-          ]}
-        />
+        <Breadcrumbs items={crumbs} />
+        <JsonLd data={breadcrumbJsonLd(crumbs)} />
         <h1 className="font-heading text-3xl font-semibold">{category.name}</h1>
       </div>
       {subcategories.length > 0 ? (
