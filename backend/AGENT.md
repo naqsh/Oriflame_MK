@@ -44,9 +44,11 @@ backend/
 │   │   └── endpoints/
 │   │       ├── categories.py   # GET /api/v1/categories (tree), /api/v1/categories/{slug}
 │   │       ├── products.py     # GET /api/v1/products, /api/v1/products/{slug}
-│   │       └── search.py       # GET /api/v1/search; (planned) referral, admin
+│   │       ├── referral.py     # POST /api/v1/referral/handoff, GET /api/v1/referral/mode
+│   │       └── search.py       # GET /api/v1/search; (planned) admin
 │   ├── core/
-│   │   ├── config.py           # Settings, ReferralConfig, ConfigProvider; ALLOWED_REFERRAL_HOSTS (referral host allow-list)
+│   │   ├── config.py           # Settings, ReferralConfig, ConfigProvider; ALLOWED_REFERRAL_HOSTS, referral_url_problem
+│   │   ├── rate_limit.py       # In-memory per-client RateLimiter + FastAPI dependency (429, Retry-After)
 │   │   ├── logging.py          # structlog JSON + RequestContextMiddleware (X-Request-ID, request_completed)
 │   │   └── security.py         # (planned, OR-E6) admin auth, headers, rate limits
 │   ├── db/
@@ -54,11 +56,13 @@ backend/
 │   ├── models/
 │   │   ├── __init__.py         # Imports every model so Base.metadata is complete for Alembic
 │   │   ├── base.py             # DeclarativeBase + constraint naming convention
-│   │   └── catalogue.py        # Product, ProductImage, Category, product_categories, CatalogueSyncRun
+│   │   ├── catalogue.py        # Product, ProductImage, Category, product_categories, CatalogueSyncRun
+│   │   └── referral.py         # ReferralClick (anonymous handoff clicks)
 │   ├── schemas/
 │   │   ├── catalogue.py        # ProductRecord, ImageRecord, CategoryRecord (validated sync input)
 │   │   ├── categories.py       # CategoryTree, CategoryNode, CategoryDetail (ancestors, children)
 │   │   ├── products.py         # ProductQuery, ProductPage, ProductSummary, ProductDetail, Availability
+│   │   ├── referral.py         # Handoff union, HandoffRequest (extra=forbid), ReferralMode
 │   │   ├── errors.py           # ErrorResponse
 │   │   └── health.py           # HealthResponse, ReadinessResponse
 │   ├── repositories/           # DB access only, no HTTP or business logic
@@ -67,12 +71,14 @@ backend/
 │   │   ├── outcomes.py         # UpsertOutcome (created/updated/unchanged), WAS_INSERTED
 │   │   ├── product_reads.py    # Visible-only listing (filters, sorts, descendant categories), detail, related
 │   │   ├── products.py         # upsert_product: row + images + category links in one savepoint
+│   │   ├── referral_clicks.py  # record, daily_counts (Pakistan-time days)
 │   │   ├── slugs.py            # new_slug: collision check against the database
 │   │   └── sync_runs.py        # start/finish/fail_stale_runs, catalogue_sync_lock (advisory lock)
 │   ├── services/
 │   │   ├── categories.py       # CategoryService: tree, detail, break_cycles
 │   │   ├── availability.py     # describe/availability_for: honest labels, freshness window, no quantities
-│   │   ├── health.py           # ReadinessService (SELECT 1); (planned) referral (ReferralService)
+│   │   ├── health.py           # ReadinessService (SELECT 1)
+│   │   ├── referral.py         # ReferralService (resolve, status), HandoffService (click recording)
 │   │   ├── products.py         # ProductService: list/get, ProductNotFoundError
 │   │   └── slugs.py            # slugify + deterministic collision suffix (source id)
 │   ├── integrations/
@@ -93,7 +99,8 @@ backend/
 │       ├── 001_baseline.py     # Empty schema; RLS on alembic_version
 │       ├── 002_catalogue_schema.py  # Catalogue tables + sync_run_status enum; RLS on each
 │       ├── 003_product_source.py    # products.source (indexed; existing rows backfilled dev_fixture)
-│       └── 004_product_search.py    # generated search_vector + GIN; pg_trgm (extensions schema) name index
+│       ├── 004_product_search.py    # generated search_vector + GIN; pg_trgm (extensions schema) name index
+│       └── 005_referral_clicks.py   # referral_clicks (no personal data), index on occurred_at, RLS
 └── tests/
     ├── conftest.py             # clean_env, app/client/async_client, TEST_POSTGRES_URL db fixtures
     ├── unit/                   # config, db session, slugs, catalogue schemas, sources (fixture, mocked HTTP)
@@ -164,6 +171,8 @@ The referral code and referral URL are configuration, not constants in applicati
 - Use only an official referral URL or a documented, permitted referral mechanism. Do not assume appending a consultant code to an arbitrary URL creates attribution.
 - If the official checkout requires manual code entry (`ORIFLAME_REFERRAL_METHOD=manual_code`), return instructions plus the code for a copy-code action.
 - Never state a sale was attributed unless Oriflame confirms it.
+- **Implemented (OR-E4, ADR-002):** `services/referral.py`. `ReferralService.resolve()` returns `official_url` / `manual_code` / `unavailable`, and `status()` returns `configured` / `not_configured` / `invalid` without the code or URL. `HandoffService` records the anonymous click. Endpoints: `POST /api/v1/referral/handoff` and `GET /api/v1/referral/mode`. Flow, analytics fields and the rate limit: `docs/REFERRAL.md`, "Handoff Flow".
+- **Rate limiting:** `core/rate_limit.py` (`RateLimiter`, `rate_limit_dependency`): in memory, per process, keyed by client address (never stored or logged). Behind a proxy it needs trusted forwarded headers (OR-052). The shared limiter for the other public endpoints comes in OR-E6.
 - Define a lightweight `ConfigProvider` interface; env vars are the initial provider. Do not build a settings database/UI unless requested.
 
 ---
@@ -196,7 +205,7 @@ Supabase PostgreSQL + Alembic. Every table in `public` gets `ENABLE ROW LEVEL SE
 | `catalogue_sync_runs` ✅ | `source`, `started_at`/`finished_at`, `status` (enum `sync_run_status`: running, success, failed, partial), created/updated/unchanged/error counts, `error_detail` |
 | `admin_users` | If admin authentication is implemented |
 | `audit_logs` | Meaningful admin actions |
-| `referral_clicks` | Basic click analytics (no personal data) |
+| `referral_clicks` ✅ | `occurred_at` (indexed), `method`, `origin`, nullable `product_slug`, `item_count` 0 to 200; no IP, user agent or other identifier (OR-031, `005_referral_clicks`) |
 
 Use unique constraints, foreign keys, and indexes for product slug, SKU/source ID, category, and searchable fields. ✅ = created by `002_catalogue_schema`.
 
