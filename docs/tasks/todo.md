@@ -6,7 +6,13 @@
 
 ## Current Epic
 
-**OR-E6 — MVP 6: Admin & Hardening** on branch `epic/E6-admin-hardening` (from `epic/autonomus-implementation` at `ab817c9`). The owner authorised completing the remaining epics, including PRs and merges, without asking (2026-10-27).
+None. All six MVP epics are merged into `epic/autonomus-implementation` (last: PR naqsh/Oriflame_MK#7, `1b8ab42`). The MVP is **complete with exceptions** (see the OR-E6 review below and `docs/PLAN.md`). Next work waits on the owner: hosting (ADR-004), referral values (ADR-002), a catalogue source (ADR-001) and content review.
+
+---
+
+## OR-E6 record (merged in PR naqsh/Oriflame_MK#7, `1b8ab42`)
+
+Branch `epic/E6-admin-hardening` (from `ab817c9`).
 
 ### Plan
 
@@ -237,6 +243,7 @@ Found along the way: without `connection()`, `/status` was prerendered at build 
 | OR-E3 | MVP 3 storefront (OR-018 to OR-028), rendering decisions in ADR-007, PR naqsh/Oriflame_MK#4, merge commit `de95399` | 2026-10-27 |
 | OR-E4 | MVP 4 referral handoff (OR-029 to OR-035), ADR-002 Proposed (restricted mode until configured), PR naqsh/Oriflame_MK#5, merge commit `cc0a714` | 2026-10-27 |
 | OR-E5 | MVP 5 SEO, AIO & GEO (OR-036 to OR-043); content and guides await owner review, PR naqsh/Oriflame_MK#6, merge commit `ab817c9` | 2026-10-27 |
+| OR-E6 | MVP 6 admin and hardening (OR-044 to OR-053); MVP complete with exceptions, ADR-003 Accepted, ADR-004 Proposed, PR naqsh/Oriflame_MK#7, merge commit `1b8ab42` | 2026-10-27 |
 
 ---
 
