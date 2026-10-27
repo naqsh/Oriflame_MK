@@ -1,9 +1,9 @@
-# Session Checkpoint: OR-E3 Merged, Ready for OR-E4
+# Session Checkpoint: OR-E4 Merged, Ready for OR-E5
 
 **Date:** October 27, 2026
 **Repo:** `naqsh/Oriflame_MK` (**public**), local path `D:\Projects\OriflameMK` (Windows)
-**Integration branch:** `epic/autonomus-implementation` at merge commit `de95399` (PR #4)
-**Status:** MVP 1 (OR-001 to OR-009), MVP 2 (OR-010 to OR-017) and MVP 3 (OR-018 to OR-028) complete and merged. OR-E4 not started.
+**Integration branch:** `epic/autonomus-implementation` at merge commit `cc0a714` (PR #5)
+**Status:** MVP 1 to MVP 4 (OR-001 to OR-035) complete and merged. OR-E5 in progress.
 
 ---
 
@@ -16,8 +16,8 @@
 
 ## Current state
 
-- **MVP 3 is merged.** The owner merged PR #4 (`epic/E3-storefront`) into `epic/autonomus-implementation` as merge commit `de95399`; all three CI checks passed.
-- **Local checkout:** on `epic/autonomus-implementation`. The local E3 branch is deleted; the remote `origin/epic/E3-storefront` is kept.
+- **MVP 4 is merged.** PR #5 (`epic/E4-referral-handoff`) merged as `cc0a714` after all three CI checks passed. The owner authorised completing the remaining epics, including PRs and merges, without asking (2026-10-27).
+- **Local checkout:** on `epic/autonomus-implementation`; the local E4 branch is deleted, the remote is kept.
 - **`main`** holds only the docs and `LICENSE`. Epic work merges into the integration branch, never into `main`.
 - **This file** is kept on purpose as the handoff between sessions (the owner asked for it), although the docs rules say to delete the checkpoint after a merge. Replace it at the next handoff.
 
@@ -26,7 +26,7 @@
 - **Catalogue (MVP 2):** development fixtures only (ADR-001 Proposed). `backend/fixtures/dev_catalogue_sample.json`, loaded with `uv run python -m backend.app.cli sync --fixtures`. Migrations 001 to 004 (004 adds full-text search and `pg_trgm` in `extensions`).
 - **API (MVP 3):** `GET /api/v1/products` (filters, sorts, pagination, `featured`), `/products/{slug}`, `/categories`, `/categories/{slug}`, `/search`. Availability is always `not_confirmed` (no source provides it); `AVAILABILITY_MAX_AGE_HOURS` sets the freshness window for the day one does.
 - **Pages (MVP 3):** `/`, `/products`, `/categories/[slug]`, `/products/[slug]`, `/search`, `/list` (browser-only shopping list) and the not-found page. Every route is a Partial Prerender with request-time data; why, and every deviation from the page specs, is in **ADR-007**.
-- **Ready for OR-E4:** empty `data-slot="referral-handoff"` on the product page and on `/list`; the homepage "How it works" links to `/referral` (404 until OR-034). `components/referral/` holds the shopping list.
+- **Referral (MVP 4):** `ReferralService` + `POST /api/v1/referral/handoff` + `GET /api/v1/referral/mode`; `BuyFromOriflame` on product pages and `/list`; `/referral` how-to-buy page; anonymous `referral_clicks` (migration 005). ADR-002 is **Proposed**: restricted mode (plain link to `https://pk.oriflame.com/`) until the owner fills in the referral placeholders in `.env`.
 
 ## Stack and versions
 
@@ -35,7 +35,7 @@ Full pins are in `docs/ENGINEERING-STANDARDS.md`.
 - **Backend:** Python 3.14 (`.python-version`; `>=3.12` supported), uv, FastAPI 0.162, Pydantic 2.14, SQLAlchemy 2.1, Alembic 1.20, psycopg 3.3, structlog 26.1, httpx 0.28.
 - **Frontend:** Next.js 16.4.3 (App Router, `cacheComponents`), React 19.3, TypeScript 5.9 strict, Tailwind 4, Zod 4.6, Node 24.
 - **Database:** Supabase PostgreSQL through `POSTGRES_URL` (port 5432 only). Row-level security with no policies on every `public` table.
-- **Tests:** backend 299 (98.98% coverage; `db` tests need `TEST_POSTGRES_URL`); frontend 193 Vitest (96.7% lines) and 2 Playwright. Network blocked in all suites.
+- **Tests:** backend 362 (99.11% coverage; `db` tests need `TEST_POSTGRES_URL`); frontend 209 Vitest and 2 Playwright. Network blocked in all suites.
 - **CI:** `.github/workflows/ci.yml` (backend, frontend, e2e), SHA-pinned actions, no secrets.
 
 ## Rules
@@ -65,14 +65,15 @@ Details in `docs/tasks/lessons.md`.
 1. **Owner's `.env`:** remove the `[ ]` around the password in `POSTGRES_URL`, delete the stray `POSTGRES_PASSWORD` line, add `TEST_POSTGRES_URL`. Then run `uv run alembic upgrade head` against the Supabase dev project (never tested there; now four migrations, including `pg_trgm` in `extensions`).
 2. **Postgres version:** the next agent checks the Supabase project's major version against `postgres:17` (ADR-006) once the `.env` works.
 3. **ADR-001:** stays Proposed until the owner has written permission from Oriflame or an official feed.
-4. **Decisions needed from the owner:** **ADR-002 referral method (OR-029, blocks OR-E4)**: is there an official Oriflame Pakistan referral URL with the consultant code, or should visitors copy the code (`manual_code`)? Also ADR-003 admin auth (OR-044), ADR-004 hosting (OR-052).
+4. **Owner actions:** fill in the referral placeholders in `.env` and confirm with Oriflame how referrals are attributed (ADR-002 → Accepted); review the `/referral` copy. Decisions still needed: ADR-003 admin auth (OR-044), ADR-004 hosting (OR-052).
 5. **Deferred, with owners (ADR-007):** real 404 and per-page metadata (OR-E5), cross-request caching (OR-052), search rate limiting (OR-E6), Lighthouse LCP in a visible browser.
 6. **Optional:** Dependabot for the pinned action SHAs.
 
 ## Next
 
-Start **OR-E4 (MVP 4: Referral Handoff)** on a new `epic/E4-referral-handoff` branch from the updated integration branch, beginning with **OR-029** (confirm the referral mechanism and record ADR-002). OR-029 needs the owner's answer first. Ask the owner before starting.
+Continue **OR-E5 (MVP 5: SEO, AIO & GEO)** on `epic/E5-seo-aio-geo`, starting with **OR-036** (metadata builders). Then OR-E6.
 
 ---
 
 *Checkpoint written October 27, 2026*
+

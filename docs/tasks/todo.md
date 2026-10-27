@@ -6,7 +6,7 @@
 
 ## Current Epic
 
-**OR-E4 — MVP 4: Referral Handoff** on branch `epic/E4-referral-handoff` (from `epic/autonomus-implementation` at `424529b`). The owner authorised completing the epic, including the PR and the merge, without asking (2026-10-27). See `docs/PLAN.md`.
+**OR-E4 — MVP 4: Referral Handoff**, merged in PR naqsh/Oriflame_MK#5 (`cc0a714`). Next epic: OR-E5 (SEO, AIO & GEO). See `docs/PLAN.md`.
 
 **Requirements agreed with the owner (2026-10-27):** referral placeholders are in the owner's local `.env` (empty for now); checkout, payment and delivery always happen on Oriflame's main site, and the shopping-list items go with the visitor in the way Oriflame permits (`docs/REFERRAL.md`, "Checkout handoff").
 
@@ -161,6 +161,7 @@ Found along the way: without `connection()`, `/status` was prerendered at build 
 | OR-E1 | MVP 1 project scaffold (OR-001 to OR-009), PR naqsh/Oriflame_MK#2, merge commit `b211b58` | 2026-10-26 |
 | OR-E2 | MVP 2 catalogue data (OR-010 to OR-017), development fixtures only (ADR-001 Proposed), PR naqsh/Oriflame_MK#3, merge commit `46f234c` | 2026-10-26 |
 | OR-E3 | MVP 3 storefront (OR-018 to OR-028), rendering decisions in ADR-007, PR naqsh/Oriflame_MK#4, merge commit `de95399` | 2026-10-27 |
+| OR-E4 | MVP 4 referral handoff (OR-029 to OR-035), ADR-002 Proposed (restricted mode until configured), PR naqsh/Oriflame_MK#5, merge commit `cc0a714` | 2026-10-27 |
 
 ---
 
