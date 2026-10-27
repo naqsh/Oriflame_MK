@@ -6,6 +6,25 @@
 
 ## Current Epic
 
+**OR-E6 — MVP 6: Admin & Hardening** on branch `epic/E6-admin-hardening` (from `epic/autonomus-implementation` at `ab817c9`). The owner authorised completing the remaining epics, including PRs and merges, without asking (2026-10-27).
+
+### Plan
+
+- [ ] OR-044: ADR-003 (password login, opaque server-side sessions, scrypt, bearer token from the Next.js server, HttpOnly SameSite=Strict cookie on the store origin); `admin_users` + `admin_sessions` (migration 006, RLS); `create-admin` CLI; login/logout API with rate limit and lockout; `/admin/login`
+- [ ] OR-045: router-level `require_admin`; route enumeration test; Next.js proxy redirect for `/admin/*`; Server Actions for state changes (Origin check)
+- [ ] OR-046: `audit_logs` (migration 007), `AuditService` in the same transaction; admin audit page
+- [ ] OR-047: sync-runs list and manual sync trigger (409 while running; fixtures refused in production)
+- [ ] OR-048: product visibility/featured: owner has not confirmed it is required, so closed as not needed unless confirmed
+- [ ] OR-049: referral status (masked code) and daily handoff clicks
+- [ ] OR-050: security headers (frontend CSP + API), CORS check, rate limits on login/search, trusted-proxy client address
+- [ ] OR-051: Playwright: browse-to-handoff, search, admin protection
+- [ ] OR-052: deployment readiness (`.env.production.example`, deployment gates in CI, ADR-004 Proposed; no paid service without the owner)
+- [ ] OR-053: MVP acceptance review with evidence
+
+---
+
+## OR-E5 record (merged in PR naqsh/Oriflame_MK#6, `ab817c9`)
+
 **OR-E5 — MVP 5: SEO, AIO & GEO** on branch `epic/E5-seo-aio-geo` (from `epic/autonomus-implementation` at `1fbb97e`). The owner authorised completing the remaining epics, including PRs and merges, without asking (2026-10-27). See `docs/PLAN.md`.
 
 ### Plan
@@ -199,6 +218,7 @@ Found along the way: without `connection()`, `/status` was prerendered at build 
 | OR-E2 | MVP 2 catalogue data (OR-010 to OR-017), development fixtures only (ADR-001 Proposed), PR naqsh/Oriflame_MK#3, merge commit `46f234c` | 2026-10-26 |
 | OR-E3 | MVP 3 storefront (OR-018 to OR-028), rendering decisions in ADR-007, PR naqsh/Oriflame_MK#4, merge commit `de95399` | 2026-10-27 |
 | OR-E4 | MVP 4 referral handoff (OR-029 to OR-035), ADR-002 Proposed (restricted mode until configured), PR naqsh/Oriflame_MK#5, merge commit `cc0a714` | 2026-10-27 |
+| OR-E5 | MVP 5 SEO, AIO & GEO (OR-036 to OR-043); content and guides await owner review, PR naqsh/Oriflame_MK#6, merge commit `ab817c9` | 2026-10-27 |
 
 ---
 

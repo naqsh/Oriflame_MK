@@ -134,7 +134,7 @@ Fresh autonomous kickoff only (not every "hi"): then read `docs/KICKOFF-PROMPT.m
 
 ---
 
-## MVP 6: Admin & Hardening ⬜
+## MVP 6: Admin & Hardening 🔄
 
 **Epic:** OR-E6  
 **Branch:** `epic/E6-admin-hardening`  
