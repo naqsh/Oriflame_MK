@@ -15,6 +15,7 @@ from backend.app.core.config import (
     load_settings,
     normalise_postgres_url,
 )
+from backend.app.main import create_app
 
 # The autouse clean_env fixture in conftest.py sets POSTGRES_URL to LOCAL_DB.
 LOCAL_DB = "postgresql://localhost:5432/app"
@@ -259,3 +260,11 @@ def test_production_accepts_https_site_origins(monkeypatch: pytest.MonkeyPatch) 
 def test_trusted_proxies_parse_like_origins(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("TRUSTED_PROXIES", "10.0.0.5, 127.0.0.1")
     assert load_settings().trusted_proxies == ["10.0.0.5", "127.0.0.1"]
+
+
+def test_app_startup_fails_on_invalid_production_settings(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A misconfigured deploy exits at startup, before it can serve traffic (OR-052)."""
+    monkeypatch.setenv("APP_ENV", "production")
+    monkeypatch.setenv("CORS_ORIGINS", "*")
+    with pytest.raises(ConfigurationError):
+        create_app()
