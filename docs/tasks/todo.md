@@ -17,7 +17,10 @@
 - [x] OR-040: about, contact, privacy, terms, cookies
   - Privacy and cookies checklist (verified against the code): no cookies set; only browser storage is `oriflame-mk.shopping-list.v1`; request logs hold method, path, status, duration, request id (no IP); referral clicks store time, placement, product and item count (no IP/UA/identifier); fonts self-hosted; checkout on Oriflame. No consent banner needed while this holds.
   - Pages show an "awaiting review" notice until the owner reviews and sets `CONTENT_REVIEWED` in `frontend/lib/content/review.ts`.
-- [ ] OR-041: FAQs and guides
+- [x] OR-041: FAQs and guides
+  - 7-question FAQ on /referral (typed in `frontend/lib/content/faq.ts`) with FAQPage JSON-LD mirroring the visible text.
+  - 2 guides at /guides/[slug] plus a /guides index (typed in `frontend/lib/content/guides.ts`). **Owner approval pending:** each guide has `approval: null`, so guides and the index render with a review notice, are noindex and are left out of the sitemap. To publish, set `approval: { approvedBy, approvedOn }`; the guide and /guides then join the sitemap and become indexable.
+  - Tests guard against unconfirmed promises (delivery times, discounts, guarantees) and efficacy claims.
 - [ ] OR-042: performance and Core Web Vitals
 - [ ] OR-043: documentation sync for SEO, AIO & GEO
 

@@ -1,5 +1,6 @@
 import type { Crumb } from "@/components/layout/breadcrumbs";
 import type { ProductDetail } from "@/lib/api/schemas/catalogue";
+import type { FaqItem } from "@/lib/content/faq";
 import { authorisedImageSrc } from "@/lib/images";
 import { canonicalUrl, describe } from "@/lib/seo/metadata";
 import { SITE_DISCLAIMER, SITE_NAME, getSiteUrl } from "@/lib/seo/site";
@@ -10,6 +11,7 @@ import { SITE_DISCLAIMER, SITE_NAME, getSiteUrl } from "@/lib/seo/site";
  * - Offer only when the price is known AND availability is verified (OR-021); today no
  *   source verifies availability, so no Offer is emitted.
  * - No aggregateRating or review, ever.
+ * - FAQPage only on a page whose visible content is that list of questions and answers.
  * - Organization is this independent store, never Oriflame; Oriflame appears only as the
  *   factual product brand.
  */
@@ -94,6 +96,20 @@ export function organizationJsonLd(): JsonLd {
     name: SITE_NAME,
     url: getSiteUrl(),
     description: SITE_DISCLAIMER,
+  };
+}
+
+/** FAQPage for questions shown, word for word, on the same page. */
+export function faqPageJsonLd(items: readonly FaqItem[], path: string): JsonLd {
+  return {
+    "@context": CONTEXT,
+    "@type": "FAQPage",
+    url: canonicalUrl(path),
+    mainEntity: items.map((item) => ({
+      "@type": "Question",
+      name: item.question,
+      acceptedAnswer: { "@type": "Answer", text: item.answer },
+    })),
   };
 }
 
