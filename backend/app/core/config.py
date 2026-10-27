@@ -130,6 +130,9 @@ class Settings(BaseSettings):
     postgres_url: SecretStr
     app_env: AppEnv = "development"
     cors_origins: Annotated[list[str], NoDecode] = Field(default_factory=list)
+    # Addresses of reverse proxies whose X-Forwarded-For is trusted (OR-050), e.g. the
+    # Next.js server or a load balancer. Empty: the direct peer address is used.
+    trusted_proxies: Annotated[list[str], NoDecode] = Field(default_factory=list)
     oriflame_country: str = Field(default="PK", pattern=r"^[A-Z]{2}$")
     oriflame_consultant_code: SecretStr | None = None
     oriflame_referral_url: HttpUrl | None = None
@@ -146,7 +149,7 @@ class Settings(BaseSettings):
             return normalise_postgres_url(raw)
         return value
 
-    @field_validator("cors_origins", mode="before")
+    @field_validator("cors_origins", "trusted_proxies", mode="before")
     @classmethod
     def _parse_cors_origins(cls, value: object) -> object:
         """Accept a JSON list or a comma-separated string."""
@@ -175,6 +178,29 @@ class Settings(BaseSettings):
         if problem:
             raise ValueError(f"ORIFLAME_REFERRAL_URL {problem}")
         return value
+
+    @model_validator(mode="after")
+    def _check_production_cors(self) -> "Settings":
+        """Production allows only explicit https site origins (no wildcard, no paths)."""
+        if self.app_env != "production":
+            return self
+        if not self.cors_origins:
+            raise ValueError("CORS_ORIGINS must list the site origin in production")
+        for origin in self.cors_origins:
+            parts = urlsplit(origin)
+            if (
+                origin == "*"
+                or parts.scheme != "https"
+                or not parts.hostname
+                or parts.path not in ("", "/")
+                or parts.query
+                or parts.fragment
+            ):
+                raise ValueError(
+                    "CORS_ORIGINS must contain only https origins such as https://example.pk "
+                    "in production"
+                )
+        return self
 
     @model_validator(mode="after")
     def _check_referral_method(self) -> "Settings":

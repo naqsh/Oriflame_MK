@@ -42,6 +42,7 @@ def test_invalid_configuration_exits_2_without_values(monkeypatch: pytest.Monkey
 
 def test_fixtures_rejected_in_production(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("APP_ENV", "production")
+    monkeypatch.setenv("CORS_ORIGINS", "https://store.example.pk")  # required in production
     code, out, err = _run("sync", "--fixtures")
     assert code == EXIT_USAGE
     assert "--fixtures is not allowed when APP_ENV=production" in err
@@ -51,6 +52,7 @@ def test_fixtures_rejected_in_production(monkeypatch: pytest.MonkeyPatch) -> Non
 @pytest.mark.parametrize("app_env", ["test", "production"])
 def test_force_dev_only_in_development(monkeypatch: pytest.MonkeyPatch, app_env: str) -> None:
     monkeypatch.setenv("APP_ENV", app_env)
+    monkeypatch.setenv("CORS_ORIGINS", "https://store.example.pk")  # valid in every env
     code, _, err = _run("sync", "--fixtures", "--force-dev")
     assert code == EXIT_USAGE
     assert "--force-dev is only allowed when APP_ENV=development" in err
@@ -59,6 +61,7 @@ def test_force_dev_only_in_development(monkeypatch: pytest.MonkeyPatch, app_env:
 def test_configured_fixture_source_refuses_production(monkeypatch: pytest.MonkeyPatch) -> None:
     """Plain `sync` in production with CATALOGUE_SOURCE=fixture fails cleanly."""
     monkeypatch.setenv("APP_ENV", "production")
+    monkeypatch.setenv("CORS_ORIGINS", "https://store.example.pk")  # required in production
     code, _, err = _run("sync")
     assert code == EXIT_FAILED
     assert "Catalogue source unusable" in err

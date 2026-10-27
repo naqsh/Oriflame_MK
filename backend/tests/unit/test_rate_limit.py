@@ -1,6 +1,9 @@
 """In-memory rate limiter (OR-032)."""
 
-from backend.app.core.rate_limit import RateLimiter
+import pytest
+from starlette.requests import Request
+
+from backend.app.core.rate_limit import RateLimiter, client_address
 
 
 class FakeClock:
@@ -44,3 +47,30 @@ def test_memory_is_bounded_by_dropping_expired_windows() -> None:
     clock.now += 61
     limiter.allow("new")
     assert len(limiter._hits) <= 2
+
+
+def _request(peer: str, forwarded: str | None = None) -> Request:
+    headers = [(b"x-forwarded-for", forwarded.encode())] if forwarded else []
+    return Request({"type": "http", "client": (peer, 1234), "headers": headers})
+
+
+@pytest.mark.parametrize(
+    ("peer", "forwarded", "trusted", "expected"),
+    [
+        # No trusted proxies: the header is ignored, so it cannot be spoofed.
+        ("203.0.113.9", "1.2.3.4", [], "203.0.113.9"),
+        # Untrusted peer: ignored even if proxies are configured.
+        ("203.0.113.9", "1.2.3.4", ["10.0.0.5"], "203.0.113.9"),
+        # Trusted proxy: the right-most address it did not add itself.
+        ("10.0.0.5", "1.2.3.4", ["10.0.0.5"], "1.2.3.4"),
+        ("10.0.0.5", "6.6.6.6, 1.2.3.4", ["10.0.0.5"], "1.2.3.4"),
+        ("10.0.0.5", "1.2.3.4, 10.0.0.6", ["10.0.0.5", "10.0.0.6"], "1.2.3.4"),
+        # Trusted proxy without a usable header: the proxy itself.
+        ("10.0.0.5", None, ["10.0.0.5"], "10.0.0.5"),
+        ("10.0.0.5", " , ", ["10.0.0.5"], "10.0.0.5"),
+    ],
+)
+def test_client_address(
+    peer: str, forwarded: str | None, trusted: list[str], expected: str
+) -> None:
+    assert client_address(_request(peer, forwarded), trusted) == expected

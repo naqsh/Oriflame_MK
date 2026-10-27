@@ -3,15 +3,18 @@
 Fixed one-minute windows keyed by the client address. The address is used only to
 count requests in memory and is never logged or stored. Limits are per process: with
 several workers, each enforces its own limit (documented in backend/AGENT.md).
-Behind a proxy, the address is the proxy's unless the server trusts forwarded headers
-(revisit with OR-052 hosting).
+Behind a proxy, set TRUSTED_PROXIES: X-Forwarded-For is honoured only when the direct
+peer is one of them, so a client cannot spoof its address (OR-050).
 """
 
 import threading
 import time
 from collections.abc import Callable
+from typing import Annotated
 
-from fastapi import HTTPException, Request, status
+from fastapi import Depends, HTTPException, Request, status
+
+from backend.app.core.config import ConfigProvider, get_config_provider
 
 
 class RateLimiter:
@@ -50,11 +53,27 @@ class RateLimiter:
         return max(1, int(self.window - (self._clock() - start)) + 1)
 
 
-def rate_limit_dependency(limiter: RateLimiter) -> Callable[[Request], None]:
+def client_address(request: Request, trusted_proxies: list[str]) -> str:
+    """The client's address. X-Forwarded-For is used only from a trusted proxy, and then
+    the right-most address that is not itself a trusted proxy is taken (the left part of
+    the header is client-controlled)."""
+    peer = request.client.host if request.client else "unknown"
+    if peer not in trusted_proxies:
+        return peer
+    forwarded = [part.strip() for part in request.headers.get("x-forwarded-for", "").split(",")]
+    for address in reversed([part for part in forwarded if part]):
+        if address not in trusted_proxies:
+            return address
+    return peer
+
+
+def rate_limit_dependency(limiter: RateLimiter) -> Callable[..., None]:
     """A FastAPI dependency answering 429 (with Retry-After) once a client is over limit."""
 
-    def check(request: Request) -> None:
-        key = request.client.host if request.client else "unknown"
+    def check(
+        request: Request, config: Annotated[ConfigProvider, Depends(get_config_provider)]
+    ) -> None:
+        key = client_address(request, config.get_settings().trusted_proxies)
         if not limiter.allow(key):
             raise HTTPException(
                 status.HTTP_429_TOO_MANY_REQUESTS,

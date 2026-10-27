@@ -20,7 +20,8 @@
 |---|---|---|
 | `POSTGRES_URL` | Backend | Production Supabase project connection string (direct or session pooler, port 5432) — see `docs/DATABASE.md` |
 | `APP_ENV` | Backend | `production` |
-| `CORS_ORIGINS` | Backend | Deployed frontend origin(s) only |
+| `CORS_ORIGINS` | Backend | Deployed frontend origin(s) only. In production startup fails unless every entry is an `https://` origin (no `*`, no path) |
+| `TRUSTED_PROXIES` | Backend (optional) | Addresses of the reverse proxies / Next.js server in front of the API. Only their `X-Forwarded-For` is honoured for per-client rate limits; leave empty when the API is reached directly |
 | `ORIFLAME_COUNTRY` | Backend | `PK` |
 | `ORIFLAME_CONSULTANT_CODE` | Backend | Server-side only |
 | `ORIFLAME_REFERRAL_URL` | Backend | Official Oriflame host, validated at startup |

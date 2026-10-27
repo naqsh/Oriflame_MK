@@ -1,14 +1,18 @@
 "use client";
 
-import { useReportWebVitals } from "next/web-vitals";
+import dynamic from "next/dynamic";
 
 /**
- * Logs Core Web Vitals to the browser console. Rendered only in development (see
- * app/layout.tsx): no analytics endpoint is approved, so nothing is sent anywhere.
+ * Development-only Web Vitals logging (OR-042). The condition is a build-time constant,
+ * so production builds drop the reporter and the web-vitals library entirely; only this
+ * empty wrapper ships. (A dynamic import from the Server Component layout does not work
+ * under `next dev`, so the switch lives here.)
  */
+const Reporter =
+  process.env.NODE_ENV === "development"
+    ? dynamic(() => import("@/components/status/web-vitals-reporter"), { ssr: false })
+    : null;
+
 export function WebVitals() {
-  useReportWebVitals((metric) => {
-    console.info(`web-vital ${metric.name}=${Math.round(metric.value * 100) / 100} rating=${metric.rating}`);
-  });
-  return null;
+  return Reporter ? <Reporter /> : null;
 }

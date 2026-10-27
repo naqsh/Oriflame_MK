@@ -156,6 +156,7 @@ def test_get_catalogue_source_refuses_fixtures_in_production(
 ) -> None:
     monkeypatch.setattr(integration, "DEFAULT_FIXTURE_PATH", _write(tmp_path, {}))
     monkeypatch.setenv("APP_ENV", "production")
+    monkeypatch.setenv("CORS_ORIGINS", "https://store.example.pk")  # required in production
     with pytest.raises(FixturesForbiddenError):
         get_catalogue_source(load_settings())
 

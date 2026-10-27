@@ -10,6 +10,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from backend.app.api.v1.endpoints import search as search_endpoint
 from backend.app.models import Product
 
 pytestmark = pytest.mark.db
@@ -178,3 +179,11 @@ def test_invalid_search_is_422(api: TestClient, params: dict[str, Any]) -> None:
 
 def test_maximum_length_query_is_accepted(api: TestClient, catalogue: None) -> None:
     assert _search(api, "c" * 100).status_code == status.HTTP_200_OK
+
+
+def test_search_is_rate_limited_per_client(api: TestClient) -> None:
+    for _ in range(search_endpoint.SEARCH_LIMIT_PER_MINUTE):
+        assert api.get("/api/v1/search", params={"q": "cream"}).status_code == status.HTTP_200_OK
+    response = api.get("/api/v1/search", params={"q": "cream"})
+    assert response.status_code == status.HTTP_429_TOO_MANY_REQUESTS
+    assert int(response.headers["retry-after"]) >= 1
