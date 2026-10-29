@@ -3,6 +3,7 @@ import { Suspense } from "react";
 
 import { HomeCatalogue, HomeCatalogueFallback } from "@/components/home/home-catalogue";
 import { HowItWorks } from "@/components/home/how-it-works";
+import { ShortlistAnimation } from "@/components/home/shortlist-animation";
 import { JsonLd } from "@/components/layout/json-ld";
 import { organizationJsonLd, websiteJsonLd } from "@/lib/seo/jsonld";
 import { buildMetadata } from "@/lib/seo/metadata";
@@ -18,14 +19,17 @@ export default function HomePage() {
   return (
     <div className="space-y-12">
       <JsonLd data={[websiteJsonLd(), organizationJsonLd()]} />
-      <section className="space-y-4">
-        <h1 className="font-heading text-3xl font-semibold sm:text-4xl">
-          Find Oriflame Pakistan products, then buy on Oriflame
-        </h1>
-        <p className="max-w-2xl text-muted-foreground">
-          An independent storefront for browsing and shortlisting Oriflame Pakistan products.
-          When you are ready, you complete your purchase on Oriflame&apos;s official website.
-        </p>
+      <section className="grid items-center gap-8 md:grid-cols-[minmax(0,1fr)_minmax(0,22rem)]">
+        <div className="space-y-4">
+          <h1 className="font-heading text-3xl font-semibold sm:text-4xl">
+            Find Oriflame Pakistan products, then buy on Oriflame
+          </h1>
+          <p className="max-w-2xl text-muted-foreground">
+            An independent storefront for browsing and shortlisting Oriflame Pakistan products.
+            When you are ready, you complete your purchase on Oriflame&apos;s official website.
+          </p>
+        </div>
+        <ShortlistAnimation />
       </section>
       <Suspense fallback={<HomeCatalogueFallback />}>
         <HomeCatalogue />

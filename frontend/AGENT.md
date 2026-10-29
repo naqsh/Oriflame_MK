@@ -243,6 +243,18 @@ Component tests assert accessible roles/names. E2E tests run against development
 
 ---
 
+## Motion (OR-E10)
+
+- **One orchestrated moment:** the homepage hero illustration (`components/home/shortlist-animation.tsx`) acts out the store's job once, in about 3.5 s: products are ticked, land in "Your list" as the count rises, then a line leads to paying on Oriflame. Original artwork only: no Oriflame logos, packaging or photos.
+- **Motion that answers an action:** the header list count bumps when an item is added (`ListIndicator`, not on first render or removal), and the "Buy on Oriflame" dialog eases open with its backdrop.
+- **No decorative motion elsewhere:** no scroll reveals on every section and no hover lifts on every card.
+- **How it is built:** CSS keyframes in `app/globals.css` and inline SVG, with no animation library and no client JavaScript for the hero. Start times are inline `animation-delay` values from the component (`delay()`); custom properties holding `var()` resolve where they are declared, so a shared `--step` on the `<svg>` would give every step the same delay.
+- **Reduced motion:** every animation sits inside `@media (prefers-reduced-motion: no-preference)`. The static markup is the finished scene, so visitors who reduce motion, and visitors without CSS animation, see the end state.
+- **Performance:** the `h1` stays static (it is the LCP element), and the SVG has a fixed `viewBox`, so it reserves its height and cannot cause layout shift. It is `aria-hidden`; the hero text says the same thing.
+- **Checking a frame:** in the browser, `svg.getAnimations({ subtree: true })`, then pause them and set `currentTime` (ms) to inspect any moment.
+
+---
+
 ## Accessibility Requirements
 
 - Semantic landmarks (`header`, `nav`, `main`, `footer`), one `h1` per page.

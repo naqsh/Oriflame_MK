@@ -128,3 +128,101 @@
     @apply font-sans;
   }
 }
+/*
+ * Shortlist animation (components/home/shortlist-animation.tsx). The markup is the
+ * finished scene; motion only runs when the visitor allows it, once, in about 3.5 s.
+ * Each step's product hops, is ticked, a dot flies into its list row, the row appears and
+ * the count goes up; then the line leads to Oriflame. Start times are inline
+ * animation-delay values set by the component; only durations and easing live here.
+ */
+:root {
+  --shortlist-rose: #e9b9c0;
+  --shortlist-saffron: #e3a13a;
+  --shortlist-teal: #3f8f8a;
+}
+
+.shortlist .shortlist-dot,
+.shortlist .shortlist-count {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .shortlist g,
+  .shortlist circle,
+  .shortlist text,
+  .shortlist path {
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+  .shortlist .shortlist-hop {
+    transform-origin: 50% 100%;
+    animation: shortlist-hop 0.45s cubic-bezier(0.3, 0.7, 0.4, 1);
+  }
+  .shortlist .shortlist-tick {
+    animation: shortlist-pop 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+  }
+  .shortlist .shortlist-dot {
+    animation: shortlist-fly 0.55s cubic-bezier(0.5, 0, 0.3, 1);
+  }
+  .shortlist .shortlist-appear {
+    animation: shortlist-pop 0.3s ease-out both;
+  }
+  .shortlist .shortlist-count {
+    animation: shortlist-show 0.8s steps(1, end);
+  }
+  .shortlist .shortlist-line {
+    stroke-dasharray: 1;
+    animation: shortlist-draw 0.5s ease-in-out both;
+  }
+  .shortlist .shortlist-end {
+    animation: shortlist-pop 0.35s ease-out both;
+  }
+}
+
+@keyframes shortlist-hop {
+  0%, 100% { transform: translateY(0); }
+  45% { transform: translateY(-10px); }
+}
+@keyframes shortlist-pop {
+  from { opacity: 0; transform: scale(0.6); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes shortlist-fly {
+  0% { opacity: 1; transform: translate(0, 0) scale(1); }
+  50% { transform: translate(calc(var(--dx) * 0.5), calc(var(--dy) * 0.5 - 36px)) scale(1.1); }
+  100% { opacity: 1; transform: translate(var(--dx), var(--dy)) scale(1); }
+}
+@keyframes shortlist-show {
+  from, to { opacity: 1; }
+}
+@keyframes shortlist-draw {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+
+/* Motion that answers an action: the list count bumps when an item is added. */
+@media (prefers-reduced-motion: no-preference) {
+  .list-bump {
+    display: inline-block;
+    animation: list-bump 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.4);
+  }
+  dialog.buy-dialog[open] {
+    animation: dialog-in 0.22s ease-out;
+  }
+  dialog.buy-dialog[open]::backdrop {
+    animation: backdrop-in 0.22s ease-out;
+  }
+}
+
+@keyframes list-bump {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.35); }
+  100% { transform: scale(1); }
+}
+@keyframes dialog-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes backdrop-in {
+  from { opacity: 0; }
+}

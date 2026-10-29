@@ -120,7 +120,7 @@ export function BuyFromOriflame({
         onKeyDown={(event) => {
           if (event.key === "Escape") close();
         }}
-        className="w-full max-w-lg rounded-lg border bg-background p-6 text-foreground backdrop:bg-black/40"
+        className="buy-dialog m-auto w-full max-w-lg rounded-lg border bg-background p-6 text-foreground backdrop:bg-black/40"
       >
         {handoff ? (
           <div className="space-y-4">
