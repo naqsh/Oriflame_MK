@@ -15,10 +15,10 @@ export function AddToListButton({ product, className }: { product: ListProduct; 
       <button
         type="button"
         onClick={() => add(product)}
-        aria-label={`Add ${product.name} to your shopping list`}
         className="rounded-md border px-3 py-1.5 font-medium hover:border-foreground"
       >
-        Add to list
+        {/* The spoken name starts with the visible words, so voice control works (WCAG 2.5.3). */}
+        Add to list<span className="sr-only">: {product.name}</span>
       </button>
       {inList ? (
         <Link href="/list" className="text-muted-foreground underline">

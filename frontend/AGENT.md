@@ -249,6 +249,9 @@ Component tests assert accessible roles/names. E2E tests run against development
 - Keyboard navigation for filters, menus, dialogs, and the shopping list.
 - Visible focus states; sufficient colour contrast.
 - Descriptive alt text based on factual product information.
+- **Label in name (WCAG 2.5.3):** a control's accessible name starts with its visible words. No `aria-label` that replaces visible text; add context with `sr-only` text instead (e.g. "Add to list<span class=sr-only>: product</span>").
+- **Cards:** the link wraps only the title, and its `::after` overlay makes the whole tile clickable (`ProductCard`). Never wrap a whole card in one link with an `aria-label`.
+- **Automated checks:** `e2e/accessibility.spec.ts` runs axe (`@axe-core/playwright`, WCAG 2.0 to 2.2 A/AA tags) on every template, including the list with the Oriflame dialog open, and fails on any violation. Content pages always run; catalogue pages need `E2E_POSTGRES_URL`. Axe catches only part of WCAG: keyboard paths, focus order and screen reader wording still need a manual pass before launch.
 
 ---
 

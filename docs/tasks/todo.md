@@ -42,7 +42,7 @@ Branch `epic/E6-admin-hardening` (from `ab817c9`).
 2. **Referral:** no real referral values configured. Restricted mode until the owner fills them in (ADR-002 Proposed).
 3. **Deployment:** hosting not chosen (ADR-004 Proposed). A fresh deployment, a rollback exercise, external JSON-LD validation and Lighthouse on the real host wait on it.
 4. **Content:** content pages and guides await owner review (`CONTENT_REVIEWED`, guide `approval`).
-5. **Not built:** OR-048 product visibility/featured (closed as not needed until the owner asks); the axe accessibility spec (new dependency needs approval).
+5. **Not built:** OR-048 product visibility/featured (closed as not needed until the owner asks). The axe accessibility spec was added in OR-E8.
 6. **Known limitations:** the site CSP keeps `script-src unsafe-inline` (Next.js inline bootstrap with Partial Prerendering); rate limits are in memory, so the API runs as a single instance; the referral fallback URL and host allow-list are single-country constants.
 
 ---
@@ -243,6 +243,7 @@ Found along the way: without `connection()`, `/status` was prerendered at build 
 | OR-E3 | MVP 3 storefront (OR-018 to OR-028), rendering decisions in ADR-007, PR naqsh/Oriflame_MK#4, merge commit `de95399` | 2026-10-27 |
 | OR-E4 | MVP 4 referral handoff (OR-029 to OR-035), ADR-002 Proposed (restricted mode until configured), PR naqsh/Oriflame_MK#5, merge commit `cc0a714` | 2026-10-27 |
 | OR-E5 | MVP 5 SEO, AIO & GEO (OR-036 to OR-043); content and guides await owner review, PR naqsh/Oriflame_MK#6, merge commit `ab817c9` | 2026-10-27 |
+| OR-E8 | Axe accessibility spec on every template (`@axe-core/playwright`); fixed label-in-name on product cards and Add to list, placeholder contrast | 2026-10-28 |
 | OR-E7 | Supabase dev migrated and verified; request-time caching of catalogue reads (ADR-007 amendment) | 2026-10-28 |
 | OR-E6 | MVP 6 admin and hardening (OR-044 to OR-053); MVP complete with exceptions, ADR-003 Accepted, ADR-004 Proposed, PR naqsh/Oriflame_MK#7, merge commit `1b8ab42` | 2026-10-27 |
 

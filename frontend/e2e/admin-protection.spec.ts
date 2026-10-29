@@ -43,7 +43,7 @@ test.describe("with an admin account", () => {
     await expect(page.getByText(/Last successful sync/)).toBeVisible();
     await page.goto("/admin/referral");
     await expect(page.getByRole("heading", { name: "Handoff clicks" })).toBeVisible();
-    await expect(page.getByText(/restricted mode/)).toBeVisible();
+    await expect(page.getByRole("main").getByText(/restricted mode/)).toBeVisible();
     await page.goto("/admin/audit");
     await expect(page.getByRole("table", { name: /Admin actions/ })).toContainText("admin.login");
 
