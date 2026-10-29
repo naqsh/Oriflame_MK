@@ -14,7 +14,7 @@ from sqlalchemy.dialects.postgresql import REGCONFIG
 from sqlalchemy.orm import Session, aliased, selectinload
 
 from backend.app.models import Category, Product, product_categories
-from backend.app.models.catalogue import SEARCH_CONFIG
+from backend.app.models.catalogue import SEARCH_CONFIG, on_storefront
 from backend.app.schemas.products import ProductQuery, ProductSort
 
 RELATED_LIMIT = 4
@@ -42,7 +42,7 @@ def _in_categories(category_ids: Select[int]) -> ColumnElement[bool]:
 
 
 def _filters(query: ProductQuery) -> list[ColumnElement[bool]]:
-    conditions: list[ColumnElement[bool]] = [Product.is_visible.is_(True)]
+    conditions: list[ColumnElement[bool]] = [on_storefront()]
     if query.category is not None:
         conditions.append(_in_categories(_category_and_descendant_ids(query.category)))
     if query.featured is not None:
@@ -87,7 +87,7 @@ def list_visible_products(session: Session, query: ProductQuery) -> ProductListR
 def get_visible_product(session: Session, slug: str) -> Product | None:
     return session.scalars(
         select(Product)
-        .where(Product.slug == slug, Product.is_visible.is_(True))
+        .where(Product.slug == slug, on_storefront())
         .options(selectinload(Product.images), selectinload(Product.categories))
     ).one_or_none()
 
@@ -103,7 +103,7 @@ def related_products(
         session.scalars(
             select(Product)
             .where(
-                Product.is_visible.is_(True),
+                on_storefront(),
                 Product.id != product.id,
                 _in_categories(select(Category.id).where(Category.id.in_(category_ids))),
             )
@@ -132,7 +132,7 @@ def search_visible_products(
     exact_name = func.lower(Product.name) == q.lower()
     result = _ranked(
         session,
-        [Product.is_visible.is_(True), matches],
+        [on_storefront(), matches],
         [exact_name.desc(), func.ts_rank_cd(Product.search_vector, tsquery).desc()],
         page=page,
         page_size=page_size,
@@ -143,7 +143,7 @@ def search_visible_products(
     similarity = func.extensions.word_similarity(func.lower(q), func.lower(Product.name))
     return _ranked(
         session,
-        [Product.is_visible.is_(True), similarity >= FUZZY_THRESHOLD],
+        [on_storefront(), similarity >= FUZZY_THRESHOLD],
         [similarity.desc()],
         page=page,
         page_size=page_size,

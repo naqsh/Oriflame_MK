@@ -20,6 +20,7 @@ ADMIN_LOGIN = "admin.login"
 ADMIN_LOGIN_FAILED = "admin.login_failed"
 ADMIN_LOGOUT = "admin.logout"
 CATALOGUE_SYNC_STARTED = "catalogue.sync_started"
+PRODUCT_FLAGS_UPDATED = "product.flags_updated"
 
 _SECRET_KEY = re.compile(r"password|token|secret|consultant_code|authorization|cookie", re.I)
 

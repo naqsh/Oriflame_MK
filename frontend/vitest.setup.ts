@@ -9,6 +9,7 @@ import { afterEach, beforeEach, vi } from "vitest";
 vi.mock("next/cache", async (importOriginal) => ({
   ...(await importOriginal<typeof import("next/cache")>()),
   cacheLife: vi.fn(),
+  cacheTag: vi.fn(),
 }));
 
 // No real network in unit tests: any fetch a test has not stubbed fails loudly.

@@ -1,4 +1,4 @@
-import { cacheLife } from "next/cache";
+import { cacheLife, cacheTag } from "next/cache";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -10,6 +10,7 @@ import {
   searchProducts,
 } from "@/lib/api/catalogue";
 import { ApiError } from "@/lib/api/client";
+import { CATALOGUE_CACHE_TAG } from "@/lib/admin/constants";
 
 import { jsonResponse, productDetailPayload, productSummary } from "./catalogue-fixtures";
 
@@ -28,6 +29,7 @@ function requestedUrl(fetchMock: ReturnType<typeof vi.fn>): URL {
 afterEach(() => {
   vi.restoreAllMocks();
   vi.mocked(cacheLife).mockClear();
+  vi.mocked(cacheTag).mockClear();
 });
 
 describe("catalogue API functions", () => {
@@ -138,6 +140,12 @@ describe("catalogue read caching", () => {
     stubFetch(jsonResponse(PAGE));
     await getProducts();
     expect(cacheLife).toHaveBeenCalledWith(CATALOGUE_CACHE);
+  });
+
+  it("tags every cached read, so admin product changes can expire it", async () => {
+    stubFetch(jsonResponse({ items: [] }));
+    await getCategories();
+    expect(cacheTag).toHaveBeenCalledWith(CATALOGUE_CACHE_TAG);
   });
 
   it("caches a 404 like a success: an unknown slug is a stable answer", async () => {
