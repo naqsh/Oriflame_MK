@@ -4,6 +4,7 @@
     uv run python -m backend.app.cli sync --fixtures    # development fixtures (never production)
     uv run python -m backend.app.cli sync --fixtures --force-dev   # allow mixing (development)
     uv run python -m backend.app.cli create-admin owner@example.pk # prompts for the password
+    uv run python -m backend.app.cli remove-fixtures --yes  # delete development fixture data
 
 Exit codes: 0 success or partial, 1 failed (run failed, source unusable or database
 error), 2 usage or configuration error, 3 a sync is already running, 4 refused because
@@ -35,9 +36,15 @@ from backend.app.integrations.oriflame.catalogue import (
     SyncReport,
 )
 from backend.app.integrations.oriflame.client import CatalogueSource, SourceError
-from backend.app.integrations.oriflame.fixtures import DEFAULT_FIXTURE_PATH, FixtureCatalogueSource
+from backend.app.integrations.oriflame.fixtures import (
+    DEFAULT_FIXTURE_PATH,
+    FIXTURE_CATEGORY_PREFIX,
+    FIXTURE_SOURCE_NAME,
+    FixtureCatalogueSource,
+)
 from backend.app.models import SyncRunStatus
 from backend.app.repositories import admin_users
+from backend.app.repositories.products import remove_source_data
 from backend.app.repositories.sync_runs import SyncAlreadyRunningError
 
 EXIT_OK = 0
@@ -76,7 +83,42 @@ def _parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Read the password from standard input instead of prompting (automation)",
     )
+    remove = commands.add_parser(
+        "remove-fixtures",
+        help="Delete the development fixture products and their categories (before a real "
+        "catalogue's first sync)",
+    )
+    remove.add_argument(
+        "--yes", action="store_true", help="Confirm: this deletes data and cannot be undone"
+    )
     return parser
+
+
+def _remove_fixtures(args: argparse.Namespace, settings: Settings, out: TextIO, err: TextIO) -> int:
+    if not args.yes:
+        raise _UsageError(
+            "This permanently deletes the development fixture products and categories. "
+            "Run again with --yes to confirm."
+        )
+    engine = create_db_engine(settings)
+    try:
+        with Session(engine) as session:
+            removed = remove_source_data(session, FIXTURE_SOURCE_NAME, FIXTURE_CATEGORY_PREFIX)
+            session.commit()
+    except OperationalError as exc:
+        print(describe_connection_error(exc, settings), file=err)
+        return EXIT_FAILED
+    except SQLAlchemyError as exc:
+        print(f"Database error ({type(exc).__name__}); see the server logs.", file=err)
+        return EXIT_FAILED
+    finally:
+        engine.dispose()
+    print(
+        f"Removed {removed.products} fixture product(s) and {removed.categories} "
+        "fixture categor(ies). Other sources were not touched.",
+        file=out,
+    )
+    return EXIT_OK
 
 
 def _read_password(args: argparse.Namespace) -> str:
@@ -181,6 +223,8 @@ def main(
     try:
         if args.command == "create-admin":
             return _create_admin(args, settings, out, err)
+        if args.command == "remove-fixtures":
+            return _remove_fixtures(args, settings, out, err)
         return _sync(args, settings, out, err)
     except _UsageError as exc:
         print(str(exc), file=err)

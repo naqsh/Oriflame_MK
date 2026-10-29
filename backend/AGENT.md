@@ -88,7 +88,7 @@ backend/
 │   │       ├── client.py       # CatalogueSource Protocol, SourceError family, InvalidRecord, parse_records
 │   │       ├── fixtures.py     # FixtureCatalogueSource (dev_fixture; strict; refuses APP_ENV=production)
 │   │       └── http.py         # FeedHttpClient: timeouts, bounded retries, Retry-After, no auth bypass
-│   ├── cli.py                  # python -m backend.app.cli sync [--fixtures] [--force-dev]
+│   ├── cli.py                  # python -m backend.app.cli sync [--fixtures] [--force-dev] | create-admin | remove-fixtures --yes
 │   └── main.py                 # create_app() factory, CORS, 500 handler
 ├── fixtures/
 │   └── dev_catalogue_sample.json  # Development-only placeholder catalogue (OR-015)

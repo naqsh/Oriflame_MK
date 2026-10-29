@@ -83,8 +83,9 @@ ORIFLAME_CONSULTANT_CODE=
 ORIFLAME_REFERRAL_URL=
 ORIFLAME_REFERRAL_METHOD=official_url
 
-# Catalogue source (ADR-001): only "fixture" until a permitted source is accepted
+# Catalogue source (ADR-001): "fixture" (development) or "csv" (owner's own list)
 CATALOGUE_SOURCE=fixture
+CATALOGUE_CSV_PATH=
 AVAILABILITY_MAX_AGE_HOURS=24
 
 # Tests only — local PostgreSQL, never the Supabase project
@@ -105,7 +106,7 @@ Rules:
 - `POSTGRES_URL` is a required `SecretStr`; scheme normalised to `postgresql+psycopg://`; never logged.
 - `ORIFLAME_REFERRAL_METHOD` is a `Literal["official_url", "manual_code"]`.
 - `AVAILABILITY_MAX_AGE_HOURS` is an int from 1 to 720 (default 24).
-- `CATALOGUE_SOURCE` is a `Literal["fixture"]`; unknown values fail at startup. Fixtures refuse to load in production.
+- `CATALOGUE_SOURCE` is a `Literal["fixture", "csv"]`; unknown values fail at startup. Fixtures refuse to load in production. `csv` requires `CATALOGUE_CSV_PATH` (startup fails otherwise).
 - `ORIFLAME_REFERRAL_URL` is validated as HTTPS with an allow-listed official Oriflame host.
 - Settings are consumed through a `ConfigProvider` interface (env provider for the MVP).
 

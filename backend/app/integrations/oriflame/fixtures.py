@@ -22,6 +22,8 @@ from backend.app.integrations.oriflame.client import (
 )
 
 FIXTURE_SOURCE_NAME = "dev_fixture"
+# Every category in the fixture file uses this prefix (remove-fixtures relies on it).
+FIXTURE_CATEGORY_PREFIX = "dev-cat-"
 FIXTURE_NOTICE_PREFIX = "Development fixture"
 # Explicitly named development fixture (OR-015 provides the file).
 BACKEND_DIR = Path(__file__).resolve().parents[3]

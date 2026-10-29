@@ -6,6 +6,9 @@
 *.pem
 *.key
 
+# --- Owner data (the catalogue CSV; never committed) ---
+/data/
+
 # --- Python ---
 __pycache__/
 *.py[cod]

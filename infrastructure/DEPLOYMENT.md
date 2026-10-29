@@ -27,7 +27,8 @@
 | `ORIFLAME_REFERRAL_URL` | Backend | Official Oriflame host, validated at startup |
 | `ORIFLAME_REFERRAL_METHOD` | Backend | `official_url` or `manual_code` |
 | `AVAILABILITY_MAX_AGE_HOURS` | Backend | Optional, default `24` (1 to 720). How long a source's stock check counts as verified; older data is shown as "Availability not confirmed" |
-| `CATALOGUE_SOURCE` | Backend | Only `fixture` exists until ADR-001 accepts a permitted source, and fixtures refuse to load in production, so a production catalogue sync cannot run yet |
+| `CATALOGUE_SOURCE` | Backend | `csv` in production: the owner's own product list (docs/CATALOGUE-CSV.md). `fixture` is development only and refuses to load in production |
+| `CATALOGUE_CSV_PATH` | Backend | Required with `CATALOGUE_SOURCE=csv`: path to the CSV on the API server (relative paths are from the repository root). Upload the file with the deploy or to the server; it is git-ignored under `data/` |
 | Admin accounts | Backend | No secret variable (ADR-003): create the first admin once with `uv run python -m backend.app.cli create-admin you@example.pk` against the production database |
 | `SITE_URL` | Frontend **build** and runtime | The store's public origin, e.g. `https://example.pk` (not secret). Used for canonical URLs, Open Graph, the sitemap and robots.txt. Required: a production build fails without it |
 | `CONTACT_EMAIL` | Frontend runtime (optional) | Public contact email shown on `/contact`. Invalid or empty values are not shown |

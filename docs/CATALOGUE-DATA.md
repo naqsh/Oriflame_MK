@@ -37,7 +37,7 @@ Record the chosen source, its terms, and image/content usage rights in an ADR (`
 
 ## Source Selection
 
-`CATALOGUE_SOURCE` picks the adapter in `backend/app/integrations/oriflame/`. Today only `fixture` exists (ADR-001). An accepted source gets its own adapter behind the `CatalogueSource` Protocol and uses `FeedHttpClient`, which enforces timeouts, bounded retries, Retry-After limits and an immediate stop on 401/403.
+`CATALOGUE_SOURCE` picks the adapter in `backend/app/integrations/oriflame/`: `fixture` (development) or `csv`, the owner's own product list (`csv_source.py`, source name `owner_csv`; guide: [CATALOGUE-CSV.md](CATALOGUE-CSV.md)). The CSV source reads a local file only and makes no network requests; nothing is copied from Oriflame's website (ADR-001, Brand Partner terms 7.5 and 7.6). A bad row that still names its product code keeps that product listed with its last good version. An accepted source gets its own adapter behind the `CatalogueSource` Protocol and uses `FeedHttpClient`, which enforces timeouts, bounded retries, Retry-After limits and an immediate stop on 401/403.
 
 ---
 

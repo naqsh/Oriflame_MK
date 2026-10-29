@@ -180,14 +180,14 @@ class CatalogueSyncService:
     ) -> tuple[SyncRunStatus, list[str]]:
         self._sync_categories(session, source, tally)
         session.commit()
-        seen, complete = self._sync_products(session, source, tally, self._clock())
+        seen, kept, complete = self._sync_products(session, source, tally, self._clock())
         if not seen:
             tally.error("Source listed no valid products; refusing to hide the catalogue")
             return SyncRunStatus.FAILED, []
 
         hidden: list[str] = []
         if complete:
-            hidden = hide_products_missing_from(session, source.name, seen)
+            hidden = hide_products_missing_from(session, source.name, seen | kept)
             if hidden:
                 log.info("catalogue_products_hidden", count=len(hidden), source_ids=hidden[:20])
                 tally.note(f"Hidden (no longer listed by the source): {len(hidden)}")
@@ -208,14 +208,22 @@ class CatalogueSyncService:
 
     def _sync_products(
         self, session: Session, source: CatalogueSource, tally: _Tally, synced_at: datetime
-    ) -> tuple[set[str], bool]:
-        """Upsert products in committed batches. Returns (seen source ids, complete)."""
+    ) -> tuple[set[str], set[str], bool]:
+        """Upsert products in committed batches.
+
+        Returns (source ids of valid products, source ids of invalid records, complete).
+        An invalid record that still names its product keeps that product listed with its
+        last good version: the source lists it, it is just unusable this time.
+        """
         seen: set[str] = set()
+        kept: set[str] = set()
         pending = 0
         try:
             for item in source.iter_products():
                 if isinstance(item, InvalidRecord):
                     tally.error(f"product {item.source_id or '(no source_id)'}: {item.problems}")
+                    if item.source_id:
+                        kept.add(item.source_id)
                     continue
                 seen.add(item.source_id)
                 try:
@@ -236,9 +244,9 @@ class CatalogueSyncService:
         except SourcePageError as exc:
             session.commit()  # keep what earlier pages delivered
             tally.error(f"Source failed part-way: {exc}")
-            return seen, False
+            return seen, kept, False
         session.commit()
-        return seen, True
+        return seen, kept, True
 
     def _finish(
         self,

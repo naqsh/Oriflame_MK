@@ -7,6 +7,7 @@ services receive configuration through a ``ConfigProvider``.
 
 import json
 from functools import lru_cache
+from pathlib import Path
 from typing import Annotated, Literal, Protocol
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
@@ -34,9 +35,9 @@ _ACCEPTED_POSTGRES_SCHEMES = frozenset({"postgres", "postgresql", SQLALCHEMY_POS
 
 AppEnv = Literal["development", "test", "production"]
 ReferralMethod = Literal["official_url", "manual_code"]
-# Catalogue sources (ADR-001). Only development fixtures until a permitted source is
-# accepted; adding one means a new name here plus an adapter in integrations/oriflame/.
-CatalogueSourceName = Literal["fixture"]
+# Catalogue sources (ADR-001): development fixtures, or the owner's own CSV list
+# (integrations/oriflame/csv_source.py). Adding one means a new name here plus an adapter.
+CatalogueSourceName = Literal["fixture", "csv"]
 
 
 def referral_url_problem(url: str) -> str | None:
@@ -138,6 +139,8 @@ class Settings(BaseSettings):
     oriflame_referral_url: HttpUrl | None = None
     oriflame_referral_method: ReferralMethod = "official_url"
     catalogue_source: CatalogueSourceName = "fixture"
+    # Required when CATALOGUE_SOURCE=csv; relative paths are from the repository root.
+    catalogue_csv_path: Path | None = None
     # Source availability older than this is shown as "not confirmed" (OR-021).
     availability_max_age_hours: int = Field(default=24, ge=1, le=720)
 
@@ -162,7 +165,9 @@ class Settings(BaseSettings):
             return json.loads(text)
         return [origin.strip() for origin in text.split(",") if origin.strip()]
 
-    @field_validator("oriflame_consultant_code", "oriflame_referral_url", mode="before")
+    @field_validator(
+        "oriflame_consultant_code", "oriflame_referral_url", "catalogue_csv_path", mode="before"
+    )
     @classmethod
     def _blank_as_none(cls, value: object) -> object:
         if isinstance(value, str) and not value.strip():
@@ -178,6 +183,12 @@ class Settings(BaseSettings):
         if problem:
             raise ValueError(f"ORIFLAME_REFERRAL_URL {problem}")
         return value
+
+    @model_validator(mode="after")
+    def _check_catalogue_csv(self) -> "Settings":
+        if self.catalogue_source == "csv" and self.catalogue_csv_path is None:
+            raise ValueError("CATALOGUE_CSV_PATH must be set when CATALOGUE_SOURCE=csv")
+        return self
 
     @model_validator(mode="after")
     def _check_production_cors(self) -> "Settings":

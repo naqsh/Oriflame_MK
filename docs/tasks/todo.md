@@ -243,6 +243,7 @@ Found along the way: without `connection()`, `/status` was prerendered at build 
 | OR-E3 | MVP 3 storefront (OR-018 to OR-028), rendering decisions in ADR-007, PR naqsh/Oriflame_MK#4, merge commit `de95399` | 2026-10-27 |
 | OR-E4 | MVP 4 referral handoff (OR-029 to OR-035), ADR-002 Proposed (restricted mode until configured), PR naqsh/Oriflame_MK#5, merge commit `cc0a714` | 2026-10-27 |
 | OR-E5 | MVP 5 SEO, AIO & GEO (OR-036 to OR-043); content and guides await owner review, PR naqsh/Oriflame_MK#6, merge commit `ab817c9` | 2026-10-27 |
+| OR-E11 | Owner CSV catalogue source (`CATALOGUE_SOURCE=csv`): template, row-level validation, bad rows keep the last good product, `remove-fixtures --yes` to swap out placeholders; guide in docs/CATALOGUE-CSV.md | 2026-10-30 |
 | OR-E10 | Store motion: homepage shortlist animation (CSS/SVG, plays once, reduced-motion safe), list-count bump on add, dialog open animation; fixed the Buy on Oriflame dialog not being centred | 2026-10-30 |
 | OR-E9 | OR-048 owner product flags: admin Products page (search, hide/show, feature), `listed_by_source` split so syncs never touch owner flags (migration 008), audited, storefront cache expired on change | 2026-10-29 |
 | OR-E8 | Axe accessibility spec on every template (`@axe-core/playwright`); fixed label-in-name on product cards and Add to list, placeholder contrast | 2026-10-28 |

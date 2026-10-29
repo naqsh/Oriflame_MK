@@ -14,7 +14,7 @@ from sqlalchemy import delete, func, insert, select, tuple_, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
-from backend.app.models import Product, ProductImage, product_categories
+from backend.app.models import Category, Product, ProductImage, product_categories
 from backend.app.repositories.categories import category_ids_by_source
 from backend.app.repositories.outcomes import WAS_INSERTED, UpsertOutcome, combine
 from backend.app.repositories.slugs import new_slug
@@ -205,3 +205,31 @@ def hide_products_missing_from(
         .returning(Product.source_id)
     )
     return sorted(hidden)
+
+
+@dataclass(frozen=True)
+class FixtureRemoval:
+    products: int
+    categories: int
+
+
+def remove_source_data(session: Session, source: str, category_prefix: str) -> FixtureRemoval:
+    """Delete every product of ``source``, then categories with ``category_prefix`` left empty.
+
+    Used to swap development fixtures for a real source. Images and category links go with
+    their products (ON DELETE CASCADE); child categories lose their parent (SET NULL).
+    The caller commits.
+    """
+    products = session.scalars(
+        delete(Product).where(Product.source == source).returning(Product.id)
+    ).all()
+    linked = select(product_categories.c.category_id)
+    categories = session.scalars(
+        delete(Category)
+        .where(
+            Category.source_id.startswith(category_prefix, autoescape=True),
+            Category.id.not_in(linked),
+        )
+        .returning(Category.id)
+    ).all()
+    return FixtureRemoval(products=len(products), categories=len(categories))
