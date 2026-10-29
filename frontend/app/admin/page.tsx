@@ -6,6 +6,7 @@ import { logoutAction } from "@/app/admin/actions";
 import { requireAdmin } from "@/lib/admin/api";
 
 const ADMIN_SECTIONS = [
+  { href: "/admin/products", label: "Products", description: "Hide products or feature them." },
   { href: "/admin/sync", label: "Catalogue sync", description: "Sync health and a manual sync." },
   { href: "/admin/referral", label: "Referral", description: "Referral setup and handoff clicks." },
   { href: "/admin/audit", label: "Audit log", description: "Recent admin actions." },
@@ -24,7 +25,7 @@ async function Dashboard() {
           </button>
         </form>
       </div>
-      <ul className="grid gap-4 sm:grid-cols-3">
+      <ul className="grid gap-4 sm:grid-cols-2">
         {ADMIN_SECTIONS.map((section) => (
           <li key={section.href} className="rounded-lg border p-4">
             <Link href={section.href} className="font-medium underline">

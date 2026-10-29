@@ -1,6 +1,7 @@
-import { cacheLife } from "next/cache";
+import { cacheLife, cacheTag } from "next/cache";
 import type { z } from "zod";
 
+import { CATALOGUE_CACHE_TAG } from "@/lib/admin/constants";
 import {
   ApiError,
   type ApiErrorKind,
@@ -61,6 +62,8 @@ type CachedRead =
 
 async function cachedRead(path: string): Promise<CachedRead> {
   "use cache";
+  // The admin product actions expire this tag, so owner changes show at once.
+  cacheTag(CATALOGUE_CACHE_TAG);
   try {
     const body = await readJson(path);
     cacheLife(CATALOGUE_CACHE);

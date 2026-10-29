@@ -18,3 +18,11 @@ export interface SyncActionState {
   ok: boolean;
   message: string;
 }
+
+export interface ProductFlagState {
+  ok: boolean;
+  message: string;
+}
+
+/** Cache tag on every cached catalogue read (lib/api/catalogue.ts). */
+export const CATALOGUE_CACHE_TAG = "catalogue";

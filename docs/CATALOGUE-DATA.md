@@ -29,7 +29,8 @@ Record the chosen source, its terms, and image/content usage rights in an ADR (`
 - **Only development fixtures are in use.** ADR-001 is Proposed: no permitted source, terms or image rights are confirmed. Nothing is read from Oriflame's website.
 - **Fixture file:** `backend/fixtures/dev_catalogue_sample.json`, loaded with `uv run python -m backend.app.cli sync --fixtures`. Rows are stored with `products.source = 'dev_fixture'`.
 - **Sync cadence:** manual only, through the CLI (OR-016); an admin trigger follows in OR-E6. A schedule is decided when a real source is accepted.
-- **Removal policy:** a product the source stops listing is hidden (`is_visible = false`), never deleted, and only within the same source. A sync never makes a hidden product visible again; that needs the admin control planned for OR-E6.
+- **Removal policy:** a product the source stops listing gets `listed_by_source = false` and leaves the storefront; it is never deleted, and only products of the same source are touched. When the source lists it again it comes back by itself.
+- **Owner precedence (OR-048):** `is_visible` and `is_featured` belong to the owner (admin Products page) and no sync ever writes them. A product is on the storefront only when the owner shows it **and** the source lists it. Product facts (name, price, availability) always come from the source and cannot be edited in the admin.
 - **Tables:** `products`, `product_images`, `categories`, `product_categories`, `catalogue_sync_runs`. No variant or availability tables: no source provides them, so availability is always "not confirmed".
 
 ---
@@ -56,7 +57,7 @@ Record the chosen source, its terms, and image/content usage rights in an ADR (`
 
 ## Sync Runs
 
-`CatalogueSyncService` (OR-014) records every run in `catalogue_sync_runs` as `success`, `partial` or `failed`; see `backend/AGENT.md` (Catalogue sync) for the rules. Only one sync runs at a time. A rerun after a failure is safe: committed batches are kept and upserts never duplicate. Products the source stops listing are hidden, not deleted. An empty source fails the run instead of hiding the catalogue.
+`CatalogueSyncService` (OR-014) records every run in `catalogue_sync_runs` as `success`, `partial` or `failed`; see `backend/AGENT.md` (Catalogue sync) for the rules. Only one sync runs at a time. A rerun after a failure is safe: committed batches are kept and upserts never duplicate. Products the source stops listing are unlisted, not deleted. An empty source fails the run instead of hiding the catalogue.
 
 ---
 

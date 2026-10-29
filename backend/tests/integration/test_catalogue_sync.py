@@ -107,9 +107,22 @@ def _counts(sessions: sessionmaker[Session]) -> tuple[int, int, int]:
 
 
 def _visible(sessions: sessionmaker[Session]) -> dict[str, bool]:
+    """On the storefront: the owner has not hidden it and the source still lists it."""
     with sessions() as session:
-        rows = session.execute(select(Product.source_id, Product.is_visible))
+        rows = session.execute(
+            select(Product.source_id, Product.is_visible & Product.listed_by_source)
+        )
         return {source_id: visible for source_id, visible in rows}
+
+
+def _flags(sessions: sessionmaker[Session], source_id: str) -> tuple[bool, bool, bool]:
+    with sessions() as session:
+        row = session.execute(
+            select(Product.is_visible, Product.is_featured, Product.listed_by_source).where(
+                Product.source_id == source_id
+            )
+        ).one()
+        return (row.is_visible, row.is_featured, row.listed_by_source)
 
 
 def _runs(sessions: sessionmaker[Session]) -> list[CatalogueSyncRun]:
@@ -365,14 +378,35 @@ def test_sync_emits_structured_events(service: CatalogueSyncService) -> None:
 def test_hidden_product_that_reappears_is_updated_but_stays_hidden(
     service: CatalogueSyncService, sessions: sessionmaker[Session]
 ) -> None:
-    """Documented limitation: visibility is not restored by a sync (admin flag)."""
+    """Owner flags (OR-048) survive a sync, even one that changes the product's facts."""
     service.run(ListSource([_product("p1"), _product("p2")]))
     with sessions.begin() as session:
         session.execute(update(Product).where(Product.source_id == "p2").values(is_visible=False))
+        session.execute(update(Product).where(Product.source_id == "p1").values(is_featured=True))
 
     service.run(ListSource([_product("p1"), _product("p2", name="Renamed")]))
 
     assert _visible(sessions) == {"p1": True, "p2": False}
+    assert _flags(sessions, "p1") == (True, True, True)
+    assert _flags(sessions, "p2") == (False, False, True)
+
+
+def test_unlisting_keeps_owner_flags_and_relisting_restores_the_product(
+    service: CatalogueSyncService, sessions: sessionmaker[Session]
+) -> None:
+    service.run(ListSource([_product("p1"), _product("p2")]))
+    with sessions.begin() as session:
+        session.execute(update(Product).where(Product.source_id == "p2").values(is_featured=True))
+
+    service.run(ListSource([_product("p1")]))
+    assert _flags(sessions, "p2") == (True, True, False)
+    assert _visible(sessions) == {"p1": True, "p2": False}
+
+    # Back in the source, unchanged facts: listed again, counted as an update.
+    report = service.run(ListSource([_product("p1"), _product("p2")]))
+    assert _flags(sessions, "p2") == (True, True, True)
+    assert _visible(sessions) == {"p1": True, "p2": True}
+    assert (report.counts.created, report.counts.updated, report.counts.unchanged) == (0, 1, 1)
 
 
 # --- Development fixtures and mixed sources (OR-015) ---------------------------------

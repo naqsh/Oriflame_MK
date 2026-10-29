@@ -146,7 +146,7 @@ Fresh autonomous kickoff only (not every "hi"): then read `docs/KICKOFF-PROMPT.m
 | OR-045 | Admin authorisation dependency and CSRF protection | Backend / Frontend / Security | M | OR-044 | ✅ | Coding |
 | OR-046 | Audit logging for admin actions | Backend / Frontend | S | OR-045 | ✅ | Coding |
 | OR-047 | Catalogue sync status and manual sync trigger | Backend / Frontend | M | OR-046, OR-E2 | ✅ | Coding |
-| OR-048 | Product visibility and featured selection (if required) | Backend / Frontend | M | OR-046 | ✅ (not needed) | Coding |
+| OR-048 | Product visibility and featured selection (if required) | Backend / Frontend | M | OR-046 | ✅ (owner confirmed; built in OR-E9) | Coding |
 | OR-049 | Referral configuration status and click analytics | Backend / Frontend | M | OR-045, OR-E4 | ✅ | Coding |
 | OR-050 | Security headers, CORS verification, and rate limits | Backend / Frontend / Security | M | OR-044 | ✅ | Coding |
 | OR-051 | Playwright end-to-end tests for critical journeys | Testing | M | OR-047, OR-049, OR-050 | ✅ | Testing |
@@ -185,7 +185,7 @@ The MVP is complete when (reviewed 2026-10-27 in OR-053: **complete with excepti
 | MVP 4 | OR-E4 | 7 | 7 | ✅ |
 | MVP 5 | OR-E5 | 8 | 8 | ✅ |
 | MVP 6 | OR-E6 | 10 | 10 | ✅ |
-| **Total** | **6 Epics** | **53** | **53** | **100%** (OR-048 closed as not needed; OR-052 deploy exercise open) |
+| **Total** | **6 Epics** | **53** | **53** | **100%** (OR-048 built in OR-E9; OR-052 deploy exercise open) |
 
 ---
 

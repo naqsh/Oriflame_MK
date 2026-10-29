@@ -20,8 +20,8 @@ from backend.app.repositories.outcomes import WAS_INSERTED, UpsertOutcome, combi
 from backend.app.repositories.slugs import new_slug
 from backend.app.schemas.catalogue import ProductRecord
 
-# Source-owned fields. Admin flags (is_visible, is_featured) and the slug are never
-# overwritten by a sync.
+# Source-owned fields. Owner flags (is_visible, is_featured) and the slug are never
+# written by a sync; the sync owns listed_by_source instead (OR-048).
 _SYNCED_FIELDS = ("sku", "name", "description", "price_pkr", "source_url")
 
 
@@ -35,7 +35,10 @@ class ProductUpsertResult:
 def _upsert_row(
     session: Session, record: ProductRecord, source: str, synced_at: datetime
 ) -> tuple[int, UpsertOutcome]:
-    slug = session.scalar(select(Product.slug).where(Product.source_id == record.source_id))
+    existing = session.execute(
+        select(Product.slug, Product.listed_by_source).where(Product.source_id == record.source_id)
+    ).first()
+    slug = existing.slug if existing else None
     if slug is None:
         slug = new_slug(
             session,
@@ -58,6 +61,7 @@ def _upsert_row(
         set_={
             **{name: excluded[name] for name in _SYNCED_FIELDS},
             "last_synced_at": excluded.last_synced_at,
+            "listed_by_source": True,
             "updated_at": func.now(),
         },
         where=tuple_(*(Product.__table__.c[n] for n in _SYNCED_FIELDS)).is_distinct_from(
@@ -69,14 +73,20 @@ def _upsert_row(
         product_id, inserted = row
         return product_id, UpsertOutcome.CREATED if inserted else UpsertOutcome.UPDATED
 
-    # Fields unchanged: refresh last_synced_at only, leaving updated_at alone.
+    # Fields unchanged: refresh last_synced_at, and list the product again if the source
+    # had dropped it. updated_at only moves for a re-listing.
+    relisted = existing is not None and not existing.listed_by_source
     product_id = session.execute(
         update(Product)
         .where(Product.source_id == record.source_id)
-        .values(last_synced_at=synced_at, updated_at=Product.updated_at)
+        .values(
+            last_synced_at=synced_at,
+            listed_by_source=True,
+            updated_at=func.now() if relisted else Product.updated_at,
+        )
         .returning(Product.id)
     ).scalar_one()
-    return product_id, UpsertOutcome.UNCHANGED
+    return product_id, UpsertOutcome.UPDATED if relisted else UpsertOutcome.UNCHANGED
 
 
 def _replace_images(session: Session, product_id: int, record: ProductRecord) -> bool:
@@ -174,9 +184,11 @@ def upsert_product(
 def hide_products_missing_from(
     session: Session, source: str, seen_source_ids: Collection[str]
 ) -> list[str]:
-    """Hide visible products of ``source`` that it no longer lists. Never deletes.
+    """Mark products of ``source`` that it no longer lists as unlisted. Never deletes.
 
-    Products from other sources are never touched. Returns the hidden source ids.
+    Only ``listed_by_source`` changes; the owner's flags are left alone, so a product the
+    source lists again reappears as the owner left it. Products from other sources are
+    never touched. Returns the newly unlisted source ids.
 
     An empty ``seen_source_ids`` would hide the whole catalogue, so it is refused.
     """
@@ -186,10 +198,10 @@ def hide_products_missing_from(
         update(Product)
         .where(
             Product.source == source,
-            Product.is_visible.is_(True),
+            Product.listed_by_source.is_(True),
             Product.source_id.not_in(list(seen_source_ids)),
         )
-        .values(is_visible=False, updated_at=func.now())
+        .values(listed_by_source=False, updated_at=func.now())
         .returning(Product.source_id)
     )
     return sorted(hidden)

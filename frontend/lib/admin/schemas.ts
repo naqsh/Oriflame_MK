@@ -77,3 +77,38 @@ export const referralClicksSchema = z.object({
   days: z.array(z.object({ day: z.iso.date(), total: z.number(), by_method: z.record(z.string(), z.number()) })),
 });
 export type ReferralClicks = z.infer<typeof referralClicksSchema>;
+
+/** One row of the admin product table (OR-048). Product facts are read-only here. */
+export const adminProductSchema = z.object({
+  slug: z.string(),
+  name: z.string(),
+  sku: z.string().nullable(),
+  source: z.string(),
+  price_pkr: z.string().nullable(),
+  last_synced_at: z.iso.datetime({ offset: true }),
+  is_visible: z.boolean(),
+  is_featured: z.boolean(),
+  listed_by_source: z.boolean(),
+  on_storefront: z.boolean(),
+});
+export type AdminProduct = z.infer<typeof adminProductSchema>;
+
+export const adminProductsPageSchema = z.object({
+  items: z.array(adminProductSchema),
+  total: z.number(),
+  page: z.number(),
+  page_size: z.number(),
+});
+export type AdminProductsPage = z.infer<typeof adminProductsPageSchema>;
+
+export const productFlagsUpdatedSchema = z.object({
+  product: adminProductSchema,
+  message: z.string(),
+});
+
+/** A flag toggle submitted from the product table. */
+export const productFlagFormSchema = z.object({
+  slug: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).max(200),
+  field: z.enum(["is_visible", "is_featured"]),
+  value: z.enum(["true", "false"]).transform((value) => value === "true"),
+});

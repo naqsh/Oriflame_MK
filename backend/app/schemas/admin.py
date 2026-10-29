@@ -1,9 +1,10 @@
 """Admin API schemas (OR-E6)."""
 
 from datetime import date, datetime
+from decimal import Decimal
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, computed_field, model_validator
 
 from backend.app.core.passwords import MAX_PASSWORD_LENGTH
 
@@ -105,3 +106,57 @@ class ReferralClicksReport(BaseModel):
     total: int
     by_origin: dict[str, int]
     days: list[DailyClicks]
+
+
+class AdminProductQuery(Page):
+    """Admin product table: every product, including hidden and unlisted ones."""
+
+    q: str | None = Field(default=None, max_length=100)
+
+
+class AdminProductEntry(BaseModel):
+    """Product facts stay read-only here; only the owner flags can change (OR-048)."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    slug: str
+    name: str
+    sku: str | None
+    source: str
+    price_pkr: Decimal | None
+    last_synced_at: datetime
+    is_visible: bool
+    is_featured: bool
+    listed_by_source: bool
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def on_storefront(self) -> bool:
+        return self.is_visible and self.listed_by_source
+
+
+class AdminProductsPage(BaseModel):
+    items: list[AdminProductEntry]
+    total: int
+    page: int
+    page_size: int
+
+
+class ProductFlagsUpdate(BaseModel):
+    """PATCH body. Any other field (name, price, availability...) is rejected with 422."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    is_visible: StrictBool | None = None
+    is_featured: StrictBool | None = None
+
+    @model_validator(mode="after")
+    def _at_least_one(self) -> "ProductFlagsUpdate":
+        if self.is_visible is None and self.is_featured is None:
+            raise ValueError("Send is_visible, is_featured, or both.")
+        return self
+
+
+class ProductFlagsUpdated(BaseModel):
+    product: AdminProductEntry
+    message: str

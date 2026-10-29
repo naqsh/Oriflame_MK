@@ -11,6 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from backend.app.models import Category, Product, product_categories
+from backend.app.models.catalogue import on_storefront
 
 
 @dataclass(frozen=True)
@@ -33,7 +34,7 @@ def visible_product_ids_by_category(session: Session) -> dict[int, set[int]]:
     rows = session.execute(
         select(product_categories.c.category_id, product_categories.c.product_id)
         .join(Product, Product.id == product_categories.c.product_id)
-        .where(Product.is_visible.is_(True))
+        .where(on_storefront())
     )
     members: dict[int, set[int]] = defaultdict(set)
     for category_id, product_id in rows:

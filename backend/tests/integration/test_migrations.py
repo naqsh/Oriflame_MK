@@ -33,7 +33,7 @@ def test_upgrade_head_on_empty_database(migration_config: Config, migrated_engin
 
     with migrated_engine.connect() as connection:
         version = connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
-    assert version == "007_audit_logs"
+    assert version == "008_listed_by_source"
 
 
 def test_downgrade_base_then_upgrade_head(migration_config: Config) -> None:
@@ -41,11 +41,55 @@ def test_downgrade_base_then_upgrade_head(migration_config: Config) -> None:
     command.upgrade(migration_config, "head")
 
 
+def _product_columns(engine: Engine) -> set[str]:
+    return {column["name"] for column in inspect(engine).get_columns("products")}
+
+
 def test_downgrade_one_then_upgrade_head(migration_config: Config, migrated_engine: Engine) -> None:
     command.downgrade(migration_config, "-1")
-    assert "audit_logs" not in inspect(migrated_engine).get_table_names()
+    assert "listed_by_source" not in _product_columns(migrated_engine)
     command.upgrade(migration_config, "head")
-    assert "audit_logs" in inspect(migrated_engine).get_table_names()
+    assert "listed_by_source" in _product_columns(migrated_engine)
+
+
+def test_listed_by_source_migration_moves_sync_hidden_products(
+    migration_config: Config, migrated_engine: Engine
+) -> None:
+    """Before 008 only the sync hid products, so hidden rows become unlisted, not owner-hidden."""
+    insert = text(
+        "INSERT INTO products"
+        " (source_id, source, slug, name, source_url, last_synced_at, is_visible)"
+        " VALUES (:sid, 'test_source', :sid, 'Sample', 'https://example.test/p', now(), :visible)"
+    )
+    flags = text(
+        "SELECT source_id, is_visible, listed_by_source FROM products"
+        " WHERE source_id IN ('m-shown', 'm-hidden') ORDER BY source_id"
+    )
+    command.downgrade(migration_config, "007_audit_logs")
+    try:
+        with migrated_engine.begin() as connection:
+            connection.execute(
+                insert, [{"sid": "m-shown", "visible": True}, {"sid": "m-hidden", "visible": False}]
+            )
+
+        command.upgrade(migration_config, "head")
+        with migrated_engine.connect() as connection:
+            rows = [tuple(row) for row in connection.execute(flags)]
+        assert rows == [("m-hidden", True, False), ("m-shown", True, True)]
+
+        command.downgrade(migration_config, "007_audit_logs")
+        with migrated_engine.connect() as connection:
+            visible: dict[str, bool] = {
+                row.source_id: row.is_visible
+                for row in connection.execute(
+                    text("SELECT source_id, is_visible FROM products WHERE source_id LIKE 'm-%'")
+                )
+            }
+        assert visible == {"m-hidden": False, "m-shown": True}
+    finally:
+        command.upgrade(migration_config, "head")
+        with migrated_engine.begin() as connection:
+            connection.execute(text("DELETE FROM products WHERE source_id LIKE 'm-%'"))
 
 
 def test_downgrade_catalogue_schema_removes_tables_and_enum(

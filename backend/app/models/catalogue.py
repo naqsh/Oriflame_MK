@@ -23,10 +23,12 @@ from sqlalchemy import (
     Table,
     Text,
     UniqueConstraint,
+    and_,
     func,
 )
 from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.sql.elements import ColumnElement
 
 from backend.app.models.base import Base
 
@@ -67,8 +69,11 @@ class Product(Base):
     currency: Mapped[str] = mapped_column(String(3), default="PKR", server_default="PKR")
     source_url: Mapped[str] = mapped_column(String(2048))
     last_synced_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    # Owner flags (OR-048): set only through the admin API, never by a sync.
     is_visible: Mapped[bool] = mapped_column(default=True, server_default="true")
     is_featured: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # Sync-owned: false while the source no longer lists the product (never deleted).
+    listed_by_source: Mapped[bool] = mapped_column(default=True, server_default="true")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
@@ -100,6 +105,11 @@ Index(
     postgresql_using="gin",
     postgresql_ops={"name": "extensions.gin_trgm_ops"},
 )
+
+
+def on_storefront() -> ColumnElement[bool]:
+    """Products visitors may see: the owner has not hidden it and the source lists it."""
+    return and_(Product.is_visible.is_(True), Product.listed_by_source.is_(True))
 
 
 class ProductImage(Base):
